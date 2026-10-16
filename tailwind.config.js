@@ -32,11 +32,16 @@ export default {
         rise: { from: { opacity: 0, transform: 'translateY(6px)' }, to: { opacity: 1, transform: 'none' } },
         pulseDot: { '0%,100%': { boxShadow: '0 0 0 0 rgba(23,180,164,.45)' }, '50%': { boxShadow: '0 0 0 5px rgba(23,180,164,0)' } },
         drift: { '0%,100%': { transform: 'translateX(0)' }, '50%': { transform: 'translateX(14px)' } },
+        sway: { '0%,100%': { transform: 'translateX(0)' }, '50%': { transform: 'translateX(36px)' } },
+        // Dipasang pada wrapper selebar panel: awan masuk dari kiri, keluar di kanan.
+        cloudPass: { from: { transform: 'translateX(-35%)' }, to: { transform: 'translateX(105%)' } },
       },
       animation: {
         rise: 'rise .28s ease-out both',
         pulseDot: 'pulseDot 1.8s ease-in-out infinite',
         drift: 'drift 14s ease-in-out infinite',
+        sway: 'sway 18s ease-in-out infinite',
+        cloudPass: 'cloudPass 60s linear infinite',
       },
     },
   },
