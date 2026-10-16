@@ -42,7 +42,7 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout variant="dreamy">
       <h1 className="text-[30px] font-semibold leading-tight tracking-tight">
         Hai, senang <span className="display italic text-sky-600">ketemu</span> lagi.
       </h1>
@@ -59,7 +59,7 @@ export default function Login() {
             <div className="relative">
               <input id={id} type={show ? 'text' : 'password'} className="input pr-11" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-1 top-1 grid h-9 w-9 place-items-center rounded-lg text-ink-faint hover:text-ink" aria-label={show ? 'Sembunyikan password' : 'Tampilkan password'}>
-                {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                {show ? <EyeOff size={18} strokeWidth={2.33} /> : <Eye size={18} strokeWidth={2.33} />}
               </button>
             </div>
           )}
@@ -90,7 +90,7 @@ export default function Login() {
                 setPassword('demo1234');
                 login.mutate({ identifier: d.id, password: 'demo1234' });
               }}
-              className="btn btn-secondary btn-sm justify-start"
+              className="btn btn-secondary btn-sm justify-start rounded-xl"
             >
               {d.label}
             </button>
