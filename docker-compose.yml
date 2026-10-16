@@ -1,0 +1,15 @@
+services:
+  teman-cerita:
+    build: .
+    image: teman-cerita:latest
+    container_name: teman-cerita
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3410
+      DATABASE_PATH: /app/data/teman-cerita.db
+    ports:
+      - "127.0.0.1:3410:3410"
+    volumes:
+      - ./data:/app/data

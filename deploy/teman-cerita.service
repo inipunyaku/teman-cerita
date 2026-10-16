@@ -1,0 +1,15 @@
+[Unit]
+Description=Teman Cerita (layanan konseling karyawan)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/teman-cerita
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist-server/server/index.js
+Restart=always
+RestartSec=3
+MemoryMax=400M
+
+[Install]
+WantedBy=multi-user.target

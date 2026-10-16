@@ -1,0 +1,6 @@
+[Unit]
+Description=Ambil sertifikat Let's Encrypt untuk Teman Cerita
+
+[Service]
+Type=oneshot
+ExecStart=/root/teman-cerita/deploy/issue-cert.sh

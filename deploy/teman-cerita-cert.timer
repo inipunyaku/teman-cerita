@@ -1,0 +1,10 @@
+[Unit]
+Description=Coba ambil sertifikat Teman Cerita tiap 10 menit sampai DNS siap
+
+[Timer]
+OnActiveSec=1min
+OnBootSec=2min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target

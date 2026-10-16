@@ -1,0 +1,189 @@
+@import '@fontsource-variable/onest';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html {
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  body {
+    @apply min-h-dvh bg-canvas font-sans text-[15px] leading-[1.55];
+  }
+  ::selection {
+    @apply bg-sky-200 text-ink;
+  }
+  :focus-visible {
+    outline: 3px solid theme('colors.sky.300');
+    outline-offset: 2px;
+    border-radius: 10px;
+  }
+  h1, h2, h3 {
+    @apply text-ink;
+    text-wrap: balance;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .display {
+    @apply font-display font-normal tracking-[-0.01em] leading-[1.05];
+  }
+  .card {
+    @apply rounded-3xl border border-line bg-white;
+  }
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink;
+  }
+  .hint {
+    @apply mt-1.5 text-[12.5px] text-ink-faint;
+  }
+  .err {
+    @apply mt-1.5 text-[12.5px] font-medium text-coral-700;
+  }
+  .input {
+    /* Selalu 16px: iOS Safari otomatis zoom bila font input < 16px */
+    @apply h-11 w-full rounded-xl border border-line bg-white px-3.5 text-base text-ink placeholder:text-ink-faint
+      transition-[border-color,box-shadow] duration-150 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100
+      disabled:bg-canvas disabled:text-ink-soft;
+  }
+  :where(textarea).input {
+    @apply h-auto min-h-[110px] py-3 leading-relaxed;
+  }
+  :where(select).input {
+    @apply appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%234F6A7D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+  }
+  .btn {
+    @apply inline-flex h-11 select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold
+      transition-[background-color,border-color,color,transform] duration-150 active:scale-[.98] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply h-9 rounded-[12px] px-3 text-[13px];
+  }
+  .btn-primary {
+    @apply bg-sky-600 text-white hover:bg-sky-700;
+  }
+  .btn-secondary {
+    @apply border border-line bg-white text-ink hover:border-sky-200 hover:bg-sky-50/60;
+  }
+  .btn-soft {
+    @apply bg-sky-50 text-sky-700 hover:bg-sky-100;
+  }
+  .btn-ghost {
+    @apply text-ink-soft hover:bg-sky-50 hover:text-ink;
+  }
+  .btn-danger {
+    @apply bg-coral-500 text-white hover:bg-coral-700;
+  }
+  .btn-mint {
+    @apply bg-mint-500 text-white hover:bg-mint-700;
+  }
+  .chip {
+    @apply inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold;
+  }
+  .eyebrow {
+    @apply text-[11.5px] font-semibold uppercase tracking-[.08em] text-ink-faint;
+  }
+  .table-head {
+    @apply text-left text-[11.5px] font-semibold uppercase tracking-[.06em] text-ink-faint;
+  }
+  .link {
+    @apply font-semibold text-sky-700 underline-offset-4 hover:underline;
+  }
+}
+
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(90deg, #EAF2F8 0%, #F5F9FC 40%, #EAF2F8 80%) 0 0 / 300% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  .grain {
+    isolation: isolate;
+  }
+  /* Jangan menimpa posisi elemen yang sudah fixed/absolute (mis. layar sambutan). */
+  .grain:where(:not(.fixed, .absolute)) {
+    position: relative;
+  }
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.line') transparent;
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
+
+/* ---- Animasi sambutan setelah login ---- */
+.tc-splash-in { animation: tcFadeIn .35s ease-out both; }
+.tc-splash-out { animation: tcFadeOut .52s ease-in forwards; }
+.tc-pop { animation: tcPop .7s cubic-bezier(.34, 1.56, .64, 1) both; }
+.tc-bob { animation: tcBob 2.4s ease-in-out infinite; }
+.tc-shadow { animation: tcShadow 2.4s ease-in-out infinite; }
+.tc-blink { transform-box: fill-box; transform-origin: center; animation: tcBlink 3.2s ease-in-out infinite; }
+.tc-bubble { transform-origin: bottom left; animation: tcPop .5s .55s cubic-bezier(.34, 1.56, .64, 1) both; }
+.tc-dot { animation: tcDot 1s ease-in-out infinite; }
+.tc-heart { opacity: 0; animation: tcHeart 2.4s ease-out infinite; }
+.tc-twinkle { animation: tcTwinkle 1.8s ease-in-out infinite; }
+.tc-drift-a { animation: tcDrift 9s ease-in-out infinite alternate; }
+.tc-drift-b { animation: tcDrift 7s ease-in-out infinite alternate-reverse; }
+.tc-glow { animation: tcGlow 3s ease-in-out infinite; }
+.tc-rise { animation: rise .5s ease-out both; }
+.tc-line { animation: tcLine .35s ease-out both; }
+.tc-fill { width: 0; animation-name: tcFill; animation-timing-function: cubic-bezier(.3, .1, .3, 1); animation-fill-mode: forwards; }
+
+@keyframes tcFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tcFadeOut { to { opacity: 0; transform: scale(1.04); filter: blur(2px); } }
+@keyframes tcPop { 0% { opacity: 0; transform: scale(.6) translateY(16px); } 100% { opacity: 1; transform: none; } }
+@keyframes tcBob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-10px) rotate(1.5deg); } }
+@keyframes tcShadow { 0%, 100% { transform: translateX(-50%) scaleX(1); opacity: .9; } 50% { transform: translateX(-50%) scaleX(.78); opacity: .5; } }
+@keyframes tcBlink { 0%, 44%, 50%, 100% { transform: scaleY(1); } 47% { transform: scaleY(.12); } }
+@keyframes tcDot { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+@keyframes tcHeart {
+  0% { opacity: 0; transform: translateY(0) scale(.5); }
+  15% { opacity: 1; transform: translateY(-6px) scale(1); }
+  100% { opacity: 0; transform: translateY(-46px) translateX(8px) scale(.9) rotate(12deg); }
+}
+@keyframes tcTwinkle { 0%, 100% { opacity: .25; transform: scale(.7) rotate(0); } 50% { opacity: 1; transform: scale(1.1) rotate(20deg); } }
+@keyframes tcDrift { from { transform: translateX(0); } to { transform: translateX(40px); } }
+@keyframes tcGlow { 0%, 100% { opacity: .7; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.12); } }
+@keyframes tcLine { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes tcFill { to { width: 100%; } }
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -50% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
