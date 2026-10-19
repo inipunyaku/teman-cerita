@@ -120,7 +120,7 @@ Garis vertikal tipis berisi titik status. Event terakhir memakai titik berwarna 
 
 ## 7. Layout
 
-- **Karyawan (mobile-first):** bar atas (logo + lonceng + avatar), konten maks. 720 px di tengah, dan **bottom nav** di mobile (Beranda, Ajukan, Tiket, Profil).
+- **Karyawan (mobile-first):** bar atas (logo + lonceng + avatar), konten maks. 720 px di tengah, dan **bottom nav** di mobile (Beranda, Buat janji, Pendaftaran, Profil).
 - **Psikolog & Admin:** sidebar kiri 248 px (logo, navigasi, kartu profil), konten maks. 1200 px. Di mobile sidebar menjadi drawer.
 - Halaman auth: dua kolom di desktop (kiri ilustrasi langit dengan kutipan, kanan formulir), satu kolom di mobile.
 

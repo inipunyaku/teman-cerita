@@ -15,7 +15,7 @@ const ok = await sendMail({
   to: { email: to },
   subject: 'Tes email — Teman Cerita',
   heading: 'Email Teman Cerita sudah aktif',
-  body: `Kalau kamu membaca ini, pengiriman lewat ${mailTransport?.toUpperCase()} berhasil.\nNotifikasi jadwal, verifikasi akun, dan status tiket akan dikirim dari alamat ini.`,
+  body: `Kalau kamu membaca ini, pengiriman lewat ${mailTransport?.toUpperCase()} berhasil.\nKonfirmasi pendaftaran, pengingat H-1, dan hasil sesi akan dikirim dari alamat ini.`,
 });
 console.log(ok ? `Terkirim ke ${to} via ${mailTransport}` : 'Gagal mengirim — lihat pesan error di atas');
 process.exit(ok ? 0 : 1);

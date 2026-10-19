@@ -32,6 +32,8 @@ export function useRealtime() {
       qc.invalidateQueries({ queryKey: ['ticket', id] });
       qc.invalidateQueries({ queryKey: ['admin-overview'] });
       qc.invalidateQueries({ queryKey: ['stats'] });
+      qc.invalidateQueries({ queryKey: ['booking'] });
+      qc.invalidateQueries({ queryKey: ['availability'] });
     });
     es.addEventListener('message', (e) => {
       const m = JSON.parse((e as MessageEvent).data) as Message;
@@ -43,6 +45,10 @@ export function useRealtime() {
     es.addEventListener('read', (e) => {
       const { ticketId } = JSON.parse((e as MessageEvent).data) as { ticketId: number };
       qc.invalidateQueries({ queryKey: ['messages', ticketId] });
+    });
+    es.addEventListener('availability', () => {
+      qc.invalidateQueries({ queryKey: ['availability'] });
+      qc.invalidateQueries({ queryKey: ['booking'] });
     });
     es.addEventListener('account', () => {
       qc.invalidateQueries({ queryKey: ['me'] });

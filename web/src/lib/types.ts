@@ -1,4 +1,4 @@
-import type { AccountStatus, AttachmentKind, Mode, Role, Severity, TicketStatus, Urgency } from '@shared/constants';
+import type { AccountStatus, AttachmentKind, Mode, Outcome, Role, TicketStatus } from '@shared/constants';
 
 export interface User {
   id: number;
@@ -14,44 +14,73 @@ export interface User {
   avatarUrl: string | null;
   avatarTone: string | null;
   statusText: string | null;
+  nickname: string | null;
+  band: string | null;
+  region: string | null;
+  gender: string | null;
+  birthDate: string | null;
+  specialization: string | null;
+  approach: string | null;
+  languages: string | null;
+  meetingUrl: string | null;
   status: AccountStatus;
-  rejectReason: string | null;
-  verifiedAt: string | null;
   createdAt: string;
   ticketCount?: number;
 }
 
-export interface Slot {
-  date: string;
-  from: string;
-  to: string;
+export interface PsychProfile {
+  id: number;
+  name: string;
+  title: string | null;
+  bio: string | null;
+  specialization: string | null;
+  approach: string | null;
+  languages: string | null;
+  avatarUrl: string | null;
+  avatarTone: string | null;
+  statusText: string | null;
 }
 
 export interface Ticket {
   id: number;
   code: string;
   status: TicketStatus;
-  topic: string;
-  story: string | null;
-  preferredMode: Mode;
   mode: Mode;
-  urgency: Urgency;
-  preferredSlots: Slot[];
-  scheduledStart: string | null;
-  scheduledEnd: string | null;
+  scheduledStart: string;
+  scheduledEnd: string;
+  room?: string | null;
   location: string | null;
   meetingUrl: string | null;
-  adminNote: string | null;
+  nickname: string;
+  topic: string;
+  impact: number;
+  complaint?: string;
+  expectation?: string;
+  screening?: number[];
+  screeningScore?: number;
+  screeningLevel?: string;
+  rescheduleCount: number;
   cancelReason: string | null;
+  cancelledAt: string | null;
   startedAt: string | null;
+  endedAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  outcome: Outcome | null;
+  category?: string | null;
+  hasFeedback: boolean;
+  feedbackScore?: number | null;
   employee: {
     id: number;
     name: string;
-    pn?: string;
-    phone?: string;
+    pn?: string | null;
+    phone?: string | null;
+    email?: string;
+    band?: string | null;
+    region?: string | null;
+    gender?: string | null;
+    birthDate?: string | null;
     unitName: string | null;
     avatarUrl: string | null;
     avatarTone: string | null;
@@ -61,11 +90,11 @@ export interface Ticket {
     id: number;
     name: string;
     title: string | null;
+    specialization: string | null;
     avatarUrl: string | null;
     avatarTone: string | null;
     statusText: string | null;
-  } | null;
-  severity?: Severity | null;
+  };
   unread: number;
 }
 
@@ -78,24 +107,25 @@ export interface TicketEvent {
   actorRole: Role | null;
 }
 
-export interface RescheduleRequest {
-  id: number;
-  reason: string;
-  proposedSlots: Slot[];
-  status: 'pending' | 'approved' | 'rejected';
-  responseNote: string | null;
+export interface Report {
+  outcome: Outcome;
+  goal?: string | null;
+  healthHistory?: string | null;
+  symptoms?: string | null;
+  summary?: string | null;
+  category?: string | null;
+  noteForClient?: string | null;
   createdAt: string;
-  decidedAt: string | null;
+  updatedAt?: string;
 }
 
-export interface Report {
-  severity?: Severity;
-  topics?: string[];
-  summary?: string;
-  recommendation?: string | null;
-  noteForEmployee?: string | null;
-  followUp: boolean;
-  createdAt?: string;
+export interface Feedback {
+  score: number;
+  level: string;
+  helpful: string | null;
+  suggestion: string | null;
+  answers?: number[];
+  createdAt: string;
 }
 
 export interface ChatState {
@@ -105,13 +135,58 @@ export interface ChatState {
   closesAt?: string;
 }
 
+export interface HistoryItem {
+  id: number;
+  code: string;
+  status: TicketStatus;
+  scheduledStart: string;
+  mode: Mode;
+  psychologistName: string;
+  outcome: Outcome | null;
+}
+
 export interface TicketDetail {
   ticket: Ticket;
   events: TicketEvent[];
-  reschedules: RescheduleRequest[];
   report: Report | null;
-  review: { rating: number; comment: string | null; createdAt: string } | null;
+  feedback: Feedback | null;
+  history: HistoryItem[];
   chat: ChatState;
+}
+
+export interface Eligibility {
+  canBook: boolean;
+  reason: string | null;
+  activeTicket: { id: number; code: string } | null;
+  yearCount: number;
+  maxPerYear: number;
+  earliestDate: string | null;
+}
+
+export interface DaySlot {
+  time: string;
+  modes: Mode[];
+}
+
+export interface AvailabilityBlock {
+  id: number;
+  psychologistId: number;
+  date: string;
+  start: string;
+  end: string;
+  modes: Mode[];
+}
+
+export interface AvailabilitySession {
+  id: number;
+  code: string;
+  psychologistId: number;
+  date: string;
+  start: string;
+  end: string;
+  mode: Mode;
+  status: TicketStatus;
+  nickname?: string;
 }
 
 export interface Message {
@@ -152,19 +227,14 @@ export interface Unit {
   tickets?: number;
 }
 
-export interface Psychologist {
-  id: number;
-  name: string;
+export interface Psychologist extends PsychProfile {
   email: string;
   phone: string | null;
-  title: string | null;
-  bio: string | null;
-  avatarUrl: string | null;
-  avatarTone: string | null;
-  statusText: string | null;
+  meetingUrl: string | null;
   status: AccountStatus;
-  active: number;
+  upcoming: number;
+  awaiting: number;
   completed: number;
-  this_week: number;
-  rating: number | null;
+  openBlocks: number;
+  satisfaction: number | null;
 }

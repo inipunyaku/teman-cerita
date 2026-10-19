@@ -24,7 +24,7 @@ export function HeaderSkeleton({ actions }: { actions?: boolean }) {
   );
 }
 
-/** Daftar kartu (tiket karyawan, akun, dsb). */
+/** Daftar kartu (pendaftaran, data pekerja, dsb). */
 export function ListSkeleton({ rows = 4, avatar, header = true }: { rows?: number; avatar?: boolean; header?: boolean }) {
   return (
     <Wrap>
@@ -70,7 +70,7 @@ export function TableSkeleton({ rows = 6 }: { rows?: number }) {
   );
 }
 
-/** Beranda karyawan: kartu tiket aktif + panduan. */
+/** Beranda pekerja: kartu tiket aktif + panduan. */
 export function HomeSkeleton() {
   return (
     <Wrap className="mt-6 space-y-4">

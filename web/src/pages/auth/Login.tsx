@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import { api, errMsg } from '@/lib/api';
@@ -10,10 +10,9 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { useWelcomeSplash } from '@/components/WelcomeSplash';
 
 const DEMO = [
-  { label: 'Karyawan', id: 'karyawan@temancerita.id' },
+  { label: 'Pekerja', id: '90001234' },
   { label: 'Psikolog', id: 'psikolog@temancerita.id' },
   { label: 'Admin', id: 'admin@temancerita.id' },
-  { label: 'Belum verifikasi', id: 'baru@temancerita.id' },
 ];
 
 export default function Login() {
@@ -46,12 +45,12 @@ export default function Login() {
       <h1 className="text-[30px] font-semibold leading-tight tracking-tight">
         Hai, senang <span className="display italic text-sky-600">ketemu</span> lagi.
       </h1>
-      <p className="mt-2 text-ink-soft">Masuk pakai email atau PN kamu.</p>
+      <p className="mt-2 text-ink-soft">Masuk dengan PN kamu. Psikolog dan admin memakai email.</p>
 
       <form onSubmit={submit} className="mt-8 space-y-4">
-        <Field label="Email atau PN">
+        <Field label="PN atau email">
           {(id) => (
-            <input id={id} className="input" autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="nama@kantor.co.id atau 90001234" required />
+            <input id={id} className="input" autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="90001234" required />
           )}
         </Field>
         <Field label="Password">
@@ -70,8 +69,8 @@ export default function Login() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-ink-soft">
-        Belum punya akun? <Link to="/daftar" className="link">Daftar sebagai karyawan</Link>
+      <p className="mt-6 text-center text-[13px] text-ink-faint">
+        Tidak perlu mendaftar — data pekerja sudah terhubung berdasarkan PN. Kendala masuk? Hubungi admin Teman Cerita.
       </p>
 
       <div className="mt-10 rounded-3xl border border-dashed border-sky-200 bg-sky-50/50 p-4">
@@ -79,7 +78,7 @@ export default function Login() {
           <span className="eyebrow text-sky-700/80">Akun demo</span>
           <span className="text-[12px] text-ink-faint">password: demo1234</span>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           {DEMO.map((d) => (
             <button
               key={d.id}
@@ -90,7 +89,7 @@ export default function Login() {
                 setPassword('demo1234');
                 login.mutate({ identifier: d.id, password: 'demo1234' });
               }}
-              className="btn btn-secondary btn-sm justify-start rounded-xl"
+              className="btn btn-secondary btn-sm rounded-xl"
             >
               {d.label}
             </button>

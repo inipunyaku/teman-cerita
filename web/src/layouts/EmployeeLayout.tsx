@@ -8,8 +8,8 @@ import { UserMenu } from './UserMenu';
 
 const NAV = [
   { to: '/', label: 'Beranda', icon: House, end: true },
-  { to: '/ajukan', label: 'Ajukan', icon: PlusCircle },
-  { to: '/tiket', label: 'Tiketku', icon: TalkIcon },
+  { to: '/buat-janji', label: 'Buat janji', icon: PlusCircle },
+  { to: '/pendaftaran', label: 'Pendaftaran', icon: TalkIcon },
   { to: '/profil', label: 'Profil', icon: UserRound },
 ];
 
@@ -17,7 +17,7 @@ export function EmployeeLayout() {
   return (
     <div className="min-h-dvh pb-24 sm:pb-10">
       <header className="sticky top-0 z-30 border-b border-line/70 bg-canvas/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <NavLink to="/" aria-label="Beranda">
             <Logo />
           </NavLink>
@@ -41,7 +41,7 @@ export function EmployeeLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 pt-6 sm:px-6 sm:pt-10">
+      <main className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-10">
         <Outlet />
       </main>
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur-md sm:hidden">

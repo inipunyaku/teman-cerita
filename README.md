@@ -1,6 +1,6 @@
 # Teman Cerita
 
-Layanan konseling psikologi untuk karyawan. Karyawan mengajukan sesi, admin menjadwalkan psikolog, lalu psikolog mendampingi dan membuat laporan.
+Layanan konseling Teman Cerita BRILiaN. Pekerja masuk dengan PN, menyetujui informed consent, mengisi skrining EANSCALE dan kebutuhannya, lalu memilih sendiri psikolog, jadwal, dan media dari slot yang tersedia. Psikolog membuka ketersediaan dan mengisi form pasca-sesi; admin memantau lewat dashboard.
 
 - Dokumen produk: [docs/PRD.md](docs/PRD.md)
 - Panduan desain: [docs/DESIGN.md](docs/DESIGN.md)
@@ -19,10 +19,14 @@ npm run dev           # API :3410 + web :5173
 ## Akun demo (password `demo1234`)
 | Peran | Login |
 |---|---|
+| Pekerja | PN `90001234` (atau karyawan@temancerita.id) |
+| Psikolog | psikolog@temancerita.id (juga psikolog2@ s.d. psikolog4@) |
 | Admin | admin@temancerita.id |
-| Psikolog | psikolog@temancerita.id (juga psikolog2@, psikolog3@) |
-| Karyawan | karyawan@temancerita.id / PN 90001234 |
-| Karyawan belum diverifikasi | baru@temancerita.id |
+
+Pekerja baru ditambahkan admin di menu **Data pekerja** (satu per satu atau impor CSV). Password awal = tanggal lahir `DDMMYYYY`, atau PN bila tanggal lahir kosong.
+
+## Migrasi dari versi lama
+Saat server pertama kali jalan di database versi lama, tabel tiket/chat/laporan dibuat ulang mengikuti alur baru. Akun & unit kerja dipertahankan; database lama dicadangkan otomatis ke `data/teman-cerita.db.v1-<waktu>.bak`. Akun karyawan yang dulu masih "menunggu/ditolak" dinonaktifkan untuk ditinjau admin.
 
 ## Produksi (VPS ini)
 | Bagian | Lokasi |

@@ -10,7 +10,7 @@ const EXIT_MS = 520;
 const LINES: Record<string, string[]> = {
   employee: ['Menyiapkan ruang ceritamu…', 'Menyeduh teh hangat…', 'Merapikan bantal sofa…', 'Hampir siap, tarik napas dulu…'],
   psychologist: ['Menyiapkan jadwal hari ini…', 'Merapikan catatan sesi…', 'Menyeduh kopi pagi…', 'Hampir siap…'],
-  admin: ['Mengumpulkan kabar terbaru…', 'Merapikan antrean tiket…', 'Menghitung statistik…', 'Hampir siap…'],
+  admin: ['Mengumpulkan kabar terbaru…', 'Merapikan jadwal sesi…', 'Menghitung statistik…', 'Hampir siap…'],
 };
 
 interface SplashState {

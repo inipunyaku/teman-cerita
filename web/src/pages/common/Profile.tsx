@@ -9,7 +9,6 @@ import { fmtDate } from '@/lib/format';
 import type { User } from '@/lib/types';
 import { AVATAR_TONES, Avatar, Field, PageHeader, Spinner } from '@/components/ui';
 import { AvatarCropper } from '@/components/AvatarCropper';
-import { useUnits } from '../auth/EmployeeForm';
 import { ACCOUNT_STATUS_LABEL, ROLE_LABEL } from '@shared/constants';
 
 const STATUS_IDEAS = ['Lagi semangat', 'Butuh kopi dulu', 'Lagi belajar istirahat', 'Mode fokus', 'Pelan-pelan saja', 'Siap cerita'];
@@ -28,10 +27,19 @@ const BANNER: Record<string, string> = {
 export default function Profile() {
   const { user, setUser, logout } = useAuth();
   const u = user!;
-  const { data: units } = useUnits();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ name: u.name, phone: u.phone ?? '', unitId: String(u.unitId ?? ''), title: u.title ?? '', bio: u.bio ?? '' });
+  const [form, setForm] = useState({
+    name: u.name,
+    phone: u.phone ?? '',
+    nickname: u.nickname ?? '',
+    title: u.title ?? '',
+    bio: u.bio ?? '',
+    specialization: u.specialization ?? '',
+    approach: u.approach ?? '',
+    languages: u.languages ?? '',
+    meetingUrl: u.meetingUrl ?? '',
+  });
   const [tone, setTone] = useState(u.avatarTone ?? 'sky');
   const [statusText, setStatusText] = useState(u.statusText ?? '');
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
@@ -40,7 +48,6 @@ export default function Profile() {
     mutationFn: (extra: { avatarTone?: string; statusText?: string } = {}) =>
       api.patch<{ user: User }>('/auth/profile', {
         ...form,
-        unitId: form.unitId ? Number(form.unitId) : undefined,
         avatarTone: tone,
         statusText,
         ...extra,
@@ -86,7 +93,7 @@ export default function Profile() {
 
   return (
     <div className="mx-auto max-w-3xl animate-rise">
-      <PageHeader title="Profil" description="Tunjukkan sedikit tentang dirimu. Foto dan statusmu terlihat oleh psikolog dan admin yang mendampingimu." />
+      <PageHeader title="Profil" description="Tunjukkan sedikit tentang dirimu. Foto dan statusmu terlihat oleh psikolog yang mendampingimu dan admin." />
 
       {/* Kartu diri */}
       <section className="card overflow-hidden">
@@ -116,7 +123,7 @@ export default function Profile() {
           </div>
           <p className="mt-3 text-[13px] text-ink-soft">
             {ROLE_LABEL[u.role]} · {u.email}
-            {u.pn && ` · PN ${u.pn}`} · {ACCOUNT_STATUS_LABEL[u.status]} · bergabung {fmtDate(u.createdAt, 'MMMM yyyy')}
+            {u.pn && ` · PN ${u.pn}`} · {ACCOUNT_STATUS_LABEL[u.status]} · sejak {fmtDate(u.createdAt, 'MMMM yyyy')}
           </p>
           {u.avatarUrl && (
             <button className="btn btn-ghost btn-sm mt-3 text-coral-700 hover:bg-coral-50 hover:text-coral-700" onClick={() => removePhoto.mutate()} disabled={removePhoto.isPending}>
@@ -182,21 +189,40 @@ export default function Profile() {
             {(id) => <input id={id} className="input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />}
           </Field>
           {u.role === 'employee' && (
-            <Field label="Unit kerja">
-              {(id) => (
-                <select id={id} className="input" value={form.unitId} onChange={(e) => setForm({ ...form, unitId: e.target.value })}>
-                  {units?.units.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </select>
-              )}
-            </Field>
+            <>
+              <Field label="Nama panggilan" hint="Dipakai psikolog selama proses konseling.">
+                {(id) => <input id={id} className="input" maxLength={40} value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} />}
+              </Field>
+              <div className="rounded-2xl bg-canvas px-4 py-3 text-sm sm:col-span-2">
+                <p className="eyebrow mb-2">Master data pekerja</p>
+                <dl className="grid gap-2 sm:grid-cols-3">
+                  <div><dt className="text-ink-faint">Unit kerja</dt><dd className="font-semibold">{u.unitName ?? '-'}</dd></div>
+                  <div><dt className="text-ink-faint">Band</dt><dd className="font-semibold">{u.band ?? '-'}</dd></div>
+                  <div><dt className="text-ink-faint">Region</dt><dd className="font-semibold">{u.region ?? '-'}</dd></div>
+                </dl>
+                <p className="mt-2 text-[12.5px] text-ink-faint">Perubahan unit, band, atau region dilakukan oleh admin.</p>
+              </div>
+            </>
           )}
           {u.role === 'psychologist' && (
             <>
-              <Field label="Gelar / sebutan">
-                {(id) => <input id={id} className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="M.Psi., Psikolog" />}
+              <Field label="Gelar">
+                {(id) => <input id={id} className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="S.Psi., Psikolog" />}
               </Field>
-              <Field label="Bio singkat" className="sm:col-span-2" hint="Terlihat oleh admin saat memilih psikolog.">
+              <Field label="Spesialisasi">
+                {(id) => <input id={id} className="input" value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} placeholder="Dewasa, Karier, Manajemen Stres" />}
+              </Field>
+              <Field label="Pendekatan">
+                {(id) => <input id={id} className="input" value={form.approach} onChange={(e) => setForm({ ...form, approach: e.target.value })} placeholder="Cognitive Behavioral Therapy (CBT)" />}
+              </Field>
+              <Field label="Bahasa">
+                {(id) => <input id={id} className="input" value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} placeholder="Indonesia, English" />}
+              </Field>
+              <Field label="Deskripsi singkat" className="sm:col-span-2" hint="Tampil di profilmu saat pekerja memilih psikolog dan jadwal.">
                 {(id) => <textarea id={id} className="input" rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />}
+              </Field>
+              <Field label="Tautan Microsoft Teams pribadi" className="sm:col-span-2" hint="Otomatis dipakai untuk sesi video/voice call. Bisa diganti per sesi.">
+                {(id) => <input id={id} className="input" inputMode="url" value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="https://teams.microsoft.com/l/meetup-join/…" />}
               </Field>
             </>
           )}

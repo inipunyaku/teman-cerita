@@ -1,81 +1,212 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { requireRole } from '../auth.js';
+import { dayCapacity, wibIso, wibParts } from '../scheduling.js';
 
 export const statsRouter = Router();
 
-const RANGES: Record<string, number | null> = { '30': 30, '90': 90, '365': 365, all: null };
+interface Row {
+  id: number;
+  employee_id: number;
+  psychologist_id: number;
+  status: string;
+  mode: string;
+  scheduled_start: string;
+  reschedule_count: number;
+  screening_level: string;
+  band: string | null;
+  region: string | null;
+  gender: string | null;
+  birth_date: string | null;
+  unit_name: string | null;
+  outcome: string | null;
+  category: string | null;
+  feedback: number | null;
+  month: string;
+}
+
+type KV = { key: string; value: number };
+const FEEDBACK_MAX = 32;
+
+const countBy = <T>(rows: T[], key: (r: T) => string | null | undefined): KV[] => {
+  const m = new Map<string, number>();
+  for (const r of rows) {
+    const k = key(r) || 'Tidak diisi';
+    m.set(k, (m.get(k) ?? 0) + 1);
+  }
+  return [...m].map(([k, value]) => ({ key: k, value })).sort((a, b) => b.value - a.value);
+};
+
+/** Tabel silang: baris = grup (band/region/unit/bulan), kolom = kategori. */
+const crossTab = <T>(rows: T[], group: (r: T) => string | null | undefined, key: (r: T) => string | null | undefined) => {
+  const m = new Map<string, Record<string, number>>();
+  for (const r of rows) {
+    const g = group(r) || 'Tidak diisi';
+    const k = key(r) || 'Tidak diisi';
+    const cell = m.get(g) ?? {};
+    cell[k] = (cell[k] ?? 0) + 1;
+    m.set(g, cell);
+  }
+  return [...m]
+    .map(([g, values]) => ({ group: g, values, total: Object.values(values).reduce((a, b) => a + b, 0) }))
+    .sort((a, b) => b.total - a.total);
+};
+
+const unique = <T>(rows: T[], key: (r: T) => number) => {
+  const seen = new Set<number>();
+  return rows.filter((r) => (seen.has(key(r)) ? false : (seen.add(key(r)), true)));
+};
+const pct = (n: number, d: number) => (d ? Math.round((n / d) * 1000) / 10 : null);
+const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+
+function ageBucket(birth: string | null) {
+  if (!birth) return 'Tidak diisi';
+  const age = Math.floor((Date.now() - Date.parse(`${birth}T00:00:00Z`)) / (365.25 * 864e5));
+  if (age < 25) return '< 25';
+  if (age < 35) return '25–34';
+  if (age < 45) return '35–44';
+  if (age < 55) return '45–54';
+  return '≥ 55';
+}
+
+const HELD = new Set(['completed', 'awaiting_report']);
 
 statsRouter.get('/', requireRole('admin'), (req, res) => {
-  const range = String(req.query.range ?? '90');
-  const days = range in RANGES ? RANGES[range] : 90;
-  const since = days ? new Date(Date.now() - days * 864e5).toISOString() : '0000';
-  const all = <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(since, ...p) as T[];
-  const get = <T>(sql: string, ...p: unknown[]) => db.prepare(sql).get(since, ...p) as T;
+  const year = Number(req.query.year) || new Date().getFullYear();
+  const month = Math.min(12, Math.max(0, Number(req.query.month) || 0));
+  const monthKey = month ? `${year}-${String(month).padStart(2, '0')}` : null;
+  const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
 
-  const kpi = get<Record<string, number | null>>(
-    `SELECT COUNT(*) AS total,
-       SUM(status = 'pending') AS pending,
-       SUM(status IN ('scheduled','reschedule_requested','in_progress')) AS active,
-       SUM(status = 'completed') AS completed,
-       SUM(status = 'cancelled') AS cancelled,
-       SUM(urgency = 'high') AS urgent,
-       ROUND(AVG(CASE WHEN first_scheduled_at IS NOT NULL THEN (julianday(first_scheduled_at) - julianday(created_at)) * 24 END), 1) AS avgWaitHours
-     FROM tickets WHERE created_at >= ?`,
-  );
-  const quality = get<Record<string, number | null>>(
-    `SELECT ROUND(AVG(rv.rating), 2) AS avgRating, COUNT(rv.rating) AS reviews,
-       ROUND(100.0 * SUM(r.follow_up) / NULLIF(COUNT(r.ticket_id), 0), 0) AS followUpRate,
-       SUM(r.severity IN ('berat','kritis')) AS severeCount
-     FROM tickets t LEFT JOIN reports r ON r.ticket_id = t.id LEFT JOIN reviews rv ON rv.ticket_id = t.id
-     WHERE t.created_at >= ?`,
-  );
+  const all = (
+    db
+      .prepare(
+        `SELECT t.id, t.employee_id, t.psychologist_id, t.status, t.mode, t.scheduled_start, t.reschedule_count, t.screening_level,
+           e.band, e.region, e.gender, e.birth_date, un.name AS unit_name, r.outcome, r.category, f.score AS feedback
+         FROM tickets t JOIN users e ON e.id = t.employee_id LEFT JOIN units un ON un.id = t.unit_id
+         LEFT JOIN reports r ON r.ticket_id = t.id LEFT JOIN feedback f ON f.ticket_id = t.id
+         WHERE t.scheduled_start >= ? AND t.scheduled_start < ?`,
+      )
+      .all(wibIso(`${year}-01-01`, '00:00'), wibIso(`${year + 1}-01-01`, '00:00')) as Omit<Row, 'month'>[]
+  ).map((r) => ({ ...r, month: wibParts(r.scheduled_start).date.slice(0, 7) }));
 
-  const severity = all(
-    `SELECT r.severity AS key, COUNT(*) AS value FROM reports r JOIN tickets t ON t.id = r.ticket_id
-     WHERE t.created_at >= ? GROUP BY r.severity`,
-  );
-  const topics = all(
-    `SELECT rt.topic AS key, COUNT(*) AS value FROM report_topics rt JOIN tickets t ON t.id = rt.ticket_id
-     WHERE t.created_at >= ? GROUP BY rt.topic ORDER BY value DESC`,
-  );
-  const requestTopics = all(
-    `SELECT topic AS key, COUNT(*) AS value FROM tickets WHERE created_at >= ? GROUP BY topic ORDER BY value DESC`,
-  );
-  const modes = all(`SELECT mode AS key, COUNT(*) AS value FROM tickets WHERE created_at >= ? AND status != 'cancelled' GROUP BY mode`);
-  const units = all(
-    `SELECT u.id, u.name, COUNT(t.id) AS total,
-       SUM(r.severity IN ('berat','kritis')) AS severe,
-       SUM(r.severity = 'ringan') AS ringan, SUM(r.severity = 'sedang') AS sedang,
-       SUM(r.severity = 'berat') AS berat, SUM(r.severity = 'kritis') AS kritis
-     FROM tickets t JOIN units u ON u.id = t.unit_id LEFT JOIN reports r ON r.ticket_id = t.id
-     WHERE t.created_at >= ? GROUP BY u.id ORDER BY total DESC`,
-  );
-  const matrix = all(
-    `SELECT t.unit_id AS unitId, rt.topic, COUNT(*) AS value FROM report_topics rt JOIN tickets t ON t.id = rt.ticket_id
-     WHERE t.created_at >= ? AND t.unit_id IS NOT NULL GROUP BY t.unit_id, rt.topic`,
-  );
+  // Kapasitas slot per psikolog per bulan, dihitung dari blok ketersediaan.
+  const blocks = db
+    .prepare(`SELECT psychologist_id, date, start_time, end_time FROM availability WHERE date >= ? AND date <= ?`)
+    .all(`${year}-01-01`, `${year}-12-31`) as { psychologist_id: number; date: string; start_time: string; end_time: string }[];
+  const byDay = new Map<string, typeof blocks>();
+  for (const b of blocks) byDay.set(`${b.psychologist_id}|${b.date}`, [...(byDay.get(`${b.psychologist_id}|${b.date}`) ?? []), b]);
+  const capacity: { psych: number; month: string; n: number }[] = [...byDay].map(([k, bs]) => {
+    const [psych, date] = k.split('|');
+    return { psych: Number(psych), month: date.slice(0, 7), n: dayCapacity(date, bs) };
+  });
+  const capOf = (filter: (c: (typeof capacity)[number]) => boolean) => capacity.filter(filter).reduce((a, c) => a + c.n, 0);
 
-  // Tren selalu 6 bulan terakhir agar bentuknya terbaca, terlepas dari filter.
-  const trend = db
+  const inPeriod = (m: string) => !monthKey || m === monthKey;
+  const P = all.filter((r) => inPeriod(r.month));
+  const live = P.filter((r) => r.status !== 'cancelled');
+  const clients = unique(live, (r) => r.employee_id);
+  const fb = P.filter((r) => r.feedback != null).map((r) => r.feedback!);
+  const now = new Date().toISOString();
+  const periodCap = capOf((c) => inPeriod(c.month));
+
+  const overview = {
+    clients: clients.length,
+    completed: P.filter((r) => r.status === 'completed').length,
+    bookings: P.length,
+    upcoming: P.filter((r) => r.status === 'scheduled' && r.scheduled_start > now).length,
+    cancelRate: pct(P.filter((r) => r.status === 'cancelled').length, P.length),
+    noShowRate: pct(P.filter((r) => r.status === 'no_show').length, live.length),
+    rescheduleRate: pct(P.filter((r) => r.reschedule_count > 0).length, P.length),
+    utilization: pct(live.length, periodCap),
+    capacity: periodCap,
+    satisfaction: { rate: pct(avg(fb) ?? 0, FEEDBACK_MAX), avgScore: avg(fb) && Math.round(avg(fb)! * 10) / 10, responses: fb.length },
+    gender: countBy(clients, (r) => r.gender),
+    age: countBy(clients, (r) => ageBucket(r.birth_date)),
+    modes: countBy(live, (r) => r.mode),
+  };
+
+  const trend = months.map((m) => {
+    const rows = all.filter((r) => r.month === m);
+    const lv = rows.filter((r) => r.status !== 'cancelled');
+    const f = rows.filter((r) => r.feedback != null).map((r) => r.feedback!);
+    return {
+      month: m,
+      clients: unique(lv, (r) => r.employee_id).length,
+      sessions: rows.filter((r) => HELD.has(r.status)).length,
+      bookings: rows.length,
+      utilization: pct(lv.length, capOf((c) => c.month === m)),
+      satisfaction: f.length ? pct(avg(f)!, FEEDBACK_MAX) : null,
+    };
+  });
+
+  const reported = P.filter((r) => r.category && r.outcome !== 'no_show');
+  const reportedYear = all.filter((r) => r.category && r.outcome !== 'no_show');
+  const breakdown = <T extends Row>(rows: T[], yearRows: T[], key: (r: T) => string | null) => ({
+    total: countBy(rows, key),
+    band: crossTab(rows, (r) => r.band, key),
+    region: crossTab(rows, (r) => r.region, key),
+    unit: crossTab(rows, (r) => r.unit_name, key),
+    month: months.map((m) => ({ group: m, values: Object.fromEntries(countBy(yearRows.filter((r) => r.month === m), key).map((x) => [x.key, x.value])) })),
+  });
+
+  const count = (s: string) => P.filter((r) => r.status === s).length;
+  const outcome = (o: string) => P.filter((r) => r.outcome === o).length;
+  const monitoring = {
+    upcoming: count('scheduled'),
+    inProgress: count('in_progress'),
+    completed: count('completed'),
+    cancelled: count('cancelled'),
+    noShow: count('no_show'),
+    followUp: outcome('lanjutan'),
+    terminasi: outcome('terminasi'),
+    referral: outcome('referral'),
+    awaitingReport: count('awaiting_report'),
+  };
+
+  const done = P.filter((r) => ['completed', 'awaiting_report'].includes(r.status));
+  const outcomes = {
+    total: done.length,
+    terminasi: outcome('terminasi'),
+    lanjutan: outcome('lanjutan'),
+    referral: outcome('referral'),
+    pending: count('awaiting_report'),
+  };
+
+  const psychRows = db
     .prepare(
-      `SELECT strftime('%Y-%m', created_at) AS month, COUNT(*) AS requests,
-         SUM(status = 'completed') AS completed,
-         (SELECT COUNT(*) FROM reports r JOIN tickets t2 ON t2.id = r.ticket_id
-            WHERE strftime('%Y-%m', t2.created_at) = strftime('%Y-%m', tickets.created_at) AND r.severity IN ('berat','kritis')) AS severe
-       FROM tickets WHERE created_at >= date('now', 'start of month', '-5 months') GROUP BY month ORDER BY month`,
+      `SELECT id, name, title, status, avatar_url AS avatarUrl, avatar_tone AS avatarTone FROM users WHERE role = 'psychologist' ORDER BY name`,
     )
-    .all();
+    .all() as { id: number; name: string; title: string | null; status: string; avatarUrl: string | null; avatarTone: string | null }[];
+  const psychologists = psychRows
+    .map((p) => {
+      const mine = live.filter((r) => r.psychologist_id === p.id);
+      const slots = capOf((c) => c.psych === p.id && inPeriod(c.month));
+      return {
+        ...p,
+        slots,
+        booked: mine.length,
+        remaining: Math.max(0, slots - mine.length),
+        utilization: pct(mine.length, slots),
+        sessions: mine.filter((r) => HELD.has(r.status)).length,
+        upcoming: mine.filter((r) => r.status === 'scheduled').length,
+        satisfaction: (() => {
+          const f = mine.filter((r) => r.feedback != null).map((r) => r.feedback!);
+          return f.length ? pct(avg(f)!, FEEDBACK_MAX) : null;
+        })(),
+      };
+    })
+    .filter((p) => p.status === 'verified' || p.booked > 0);
 
-  const psychologists = all(
-    `SELECT p.id, p.name, p.title, p.avatar_url AS avatarUrl, p.avatar_tone AS avatarTone,
-       SUM(t.status = 'completed') AS completed,
-       SUM(t.status IN ('scheduled','reschedule_requested','in_progress')) AS active,
-       ROUND(AVG(rv.rating), 2) AS rating
-     FROM users p LEFT JOIN tickets t ON t.psychologist_id = p.id AND t.created_at >= ?
-     LEFT JOIN reviews rv ON rv.ticket_id = t.id
-     WHERE p.role = 'psychologist' AND p.status = 'verified' GROUP BY p.id ORDER BY completed DESC`,
-  );
-
-  res.json({ range, kpi: { ...kpi, ...quality }, severity, topics, requestTopics, modes, units, matrix, trend, psychologists });
+  res.json({
+    period: { year, month: month || null },
+    overview,
+    trend,
+    clientsByBand: countBy(clients, (r) => r.band),
+    clientsByRegion: countBy(clients, (r) => r.region),
+    problems: breakdown(reported, reportedYear, (r) => r.category),
+    screening: breakdown(live, all.filter((r) => r.status !== 'cancelled'), (r) => r.screening_level),
+    monitoring,
+    outcomes,
+    psychologists,
+  });
 });

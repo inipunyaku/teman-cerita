@@ -10,6 +10,31 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.pragma('busy_timeout = 5000');
 
+const SCHEMA_VERSION = 2;
+
+const tableCols = (table: string) =>
+  new Set((db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name));
+
+/**
+ * Versi 1 memakai alur "ajukan → admin menjadwalkan". Versi 2 mengikuti journey baru (booking mandiri,
+ * skrining, hasil & tindak lanjut), sehingga tabel tiket dan turunannya dibuat ulang. Database lama
+ * dicadangkan dulu ke file terpisah; akun dan unit kerja dipertahankan.
+ */
+if ((db.pragma('user_version', { simple: true }) as number) < SCHEMA_VERSION && tableCols('tickets').has('urgency')) {
+  const backup = `${config.databasePath}.v1-${new Date().toISOString().replace(/[:.]/g, '-')}.bak`;
+  db.exec(`VACUUM INTO '${backup.replace(/'/g, "''")}'`);
+  console.warn(`[db] Migrasi ke journey baru. Cadangan database lama: ${backup}`);
+  db.pragma('foreign_keys = OFF');
+  db.transaction(() => {
+    for (const t of ['notifications', 'messages', 'reviews', 'report_topics', 'reports', 'reschedule_requests', 'ticket_events', 'tickets']) {
+      db.exec(`DROP TABLE IF EXISTS ${t}`);
+    }
+    // Pendaftaran mandiri sudah tidak ada: akun yang belum diverifikasi dinonaktifkan untuk ditinjau admin.
+    db.exec(`UPDATE users SET status = 'disabled' WHERE role = 'employee' AND status IN ('pending','rejected')`);
+  })();
+  db.pragma('foreign_keys = ON');
+}
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS units (
   id INTEGER PRIMARY KEY,
@@ -30,7 +55,7 @@ CREATE TABLE IF NOT EXISTS users (
   title TEXT,
   bio TEXT,
   password_hash TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','verified','rejected','disabled')),
+  status TEXT NOT NULL DEFAULT 'verified' CHECK (status IN ('pending','verified','rejected','disabled')),
   reject_reason TEXT,
   verified_at TEXT,
   verified_by INTEGER REFERENCES users(id),
@@ -38,35 +63,53 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS availability (
+  id INTEGER PRIMARY KEY,
+  psychologist_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  date TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  modes TEXT NOT NULL,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_availability ON availability(date, psychologist_id);
+
 CREATE TABLE IF NOT EXISTS tickets (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,
   employee_id INTEGER NOT NULL REFERENCES users(id),
   unit_id INTEGER REFERENCES units(id),
-  psychologist_id INTEGER REFERENCES users(id),
-  topic TEXT NOT NULL,
-  story TEXT,
-  preferred_mode TEXT NOT NULL,
-  mode TEXT NOT NULL,
-  urgency TEXT NOT NULL,
-  preferred_slots TEXT NOT NULL DEFAULT '[]',
-  status TEXT NOT NULL,
-  scheduled_start TEXT,
-  scheduled_end TEXT,
-  location TEXT,
+  psychologist_id INTEGER NOT NULL REFERENCES users(id),
+  status TEXT NOT NULL CHECK (status IN ('scheduled','in_progress','awaiting_report','completed','no_show','cancelled')),
+  mode TEXT NOT NULL CHECK (mode IN ('offline','chat','online')),
+  scheduled_start TEXT NOT NULL,
+  scheduled_end TEXT NOT NULL,
+  room TEXT,
   meeting_url TEXT,
-  admin_note TEXT,
+  nickname TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  complaint TEXT NOT NULL,
+  impact INTEGER NOT NULL CHECK (impact BETWEEN 1 AND 10),
+  expectation TEXT NOT NULL,
+  screening TEXT NOT NULL,
+  screening_score INTEGER NOT NULL,
+  screening_level TEXT NOT NULL,
+  consent_at TEXT NOT NULL,
+  reschedule_count INTEGER NOT NULL DEFAULT 0,
+  reminder_sent_at TEXT,
   cancel_reason TEXT,
   cancelled_by INTEGER REFERENCES users(id),
-  first_scheduled_at TEXT,
+  cancelled_at TEXT,
   started_at TEXT,
+  ended_at TEXT,
   completed_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_tickets_employee ON tickets(employee_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_employee ON tickets(employee_id, scheduled_start);
 CREATE INDEX IF NOT EXISTS idx_tickets_psych ON tickets(psychologist_id, scheduled_start);
-CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status, scheduled_start);
 
 CREATE TABLE IF NOT EXISTS ticket_events (
   id INTEGER PRIMARY KEY,
@@ -78,40 +121,27 @@ CREATE TABLE IF NOT EXISTS ticket_events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_ticket ON ticket_events(ticket_id);
 
-CREATE TABLE IF NOT EXISTS reschedule_requests (
-  id INTEGER PRIMARY KEY,
-  ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
-  requested_by INTEGER NOT NULL REFERENCES users(id),
-  reason TEXT NOT NULL,
-  proposed_slots TEXT NOT NULL DEFAULT '[]',
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  response_note TEXT,
-  decided_by INTEGER REFERENCES users(id),
-  created_at TEXT NOT NULL,
-  decided_at TEXT
-);
-
 CREATE TABLE IF NOT EXISTS reports (
   ticket_id INTEGER PRIMARY KEY REFERENCES tickets(id) ON DELETE CASCADE,
   psychologist_id INTEGER NOT NULL REFERENCES users(id),
-  severity TEXT NOT NULL CHECK (severity IN ('ringan','sedang','berat','kritis')),
-  summary TEXT NOT NULL,
-  recommendation TEXT,
-  note_for_employee TEXT,
-  follow_up INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
+  outcome TEXT NOT NULL CHECK (outcome IN ('terminasi','lanjutan','referral','no_show')),
+  goal TEXT,
+  health_history TEXT,
+  symptoms TEXT,
+  summary TEXT,
+  category TEXT,
+  note_for_client TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS report_topics (
-  ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
-  topic TEXT NOT NULL,
-  PRIMARY KEY (ticket_id, topic)
-);
-
-CREATE TABLE IF NOT EXISTS reviews (
+CREATE TABLE IF NOT EXISTS feedback (
   ticket_id INTEGER PRIMARY KEY REFERENCES tickets(id) ON DELETE CASCADE,
-  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
-  comment TEXT,
+  answers TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  level TEXT NOT NULL,
+  helpful TEXT,
+  suggestion TEXT,
   created_at TEXT NOT NULL
 );
 
@@ -121,6 +151,10 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_id INTEGER NOT NULL REFERENCES users(id),
   body TEXT NOT NULL,
   read_at TEXT,
+  file_path TEXT,
+  file_name TEXT,
+  file_type TEXT,
+  file_size INTEGER,
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_ticket ON messages(ticket_id, id);
@@ -139,25 +173,26 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, id);
 `);
 
-// Migrasi ringan: tambah kolom baru pada database yang sudah ada.
-const userCols = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name));
+// Kolom tambahan pada tabel users (profil ekspresi diri, master data pekerja, profil psikolog).
+const userCols = tableCols('users');
 for (const [col, def] of [
   ['avatar_url', 'TEXT'],
   ['avatar_tone', 'TEXT'],
   ['status_text', 'TEXT'],
+  ['nickname', 'TEXT'],
+  ['band', 'TEXT'],
+  ['region', 'TEXT'],
+  ['gender', 'TEXT'],
+  ['birth_date', 'TEXT'],
+  ['specialization', 'TEXT'],
+  ['approach', 'TEXT'],
+  ['languages', 'TEXT'],
+  ['meeting_url', 'TEXT'],
 ] as const) {
   if (!userCols.has(col)) db.exec(`ALTER TABLE users ADD COLUMN ${col} ${def}`);
 }
 
-const messageCols = new Set((db.prepare('PRAGMA table_info(messages)').all() as { name: string }[]).map((c) => c.name));
-for (const [col, def] of [
-  ['file_path', 'TEXT'],
-  ['file_name', 'TEXT'],
-  ['file_type', 'TEXT'],
-  ['file_size', 'INTEGER'],
-] as const) {
-  if (!messageCols.has(col)) db.exec(`ALTER TABLE messages ADD COLUMN ${col} ${def}`);
-}
+db.pragma(`user_version = ${SCHEMA_VERSION}`);
 
 export const now = () => new Date().toISOString();
 

@@ -20,6 +20,15 @@ export interface UserRow {
   avatar_url: string | null;
   avatar_tone: string | null;
   status_text: string | null;
+  nickname: string | null;
+  band: string | null;
+  region: string | null;
+  gender: string | null;
+  birth_date: string | null;
+  specialization: string | null;
+  approach: string | null;
+  languages: string | null;
+  meeting_url: string | null;
   password_hash: string;
   status: AccountStatus;
   reject_reason: string | null;
@@ -73,11 +82,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-/** Karyawan wajib terverifikasi; staf selalu dianggap terverifikasi. */
+/** Akun harus aktif (status `verified`). */
 export function requireVerified(req: Request, res: Response, next: NextFunction) {
   if (!req.user) return res.status(401).json({ error: 'Silakan masuk terlebih dahulu.' });
   if (req.user.status !== 'verified') {
-    return res.status(403).json({ error: 'Akunmu belum diverifikasi admin.', code: 'NOT_VERIFIED' });
+    return res.status(403).json({ error: 'Akunmu belum aktif. Hubungi admin Teman Cerita.', code: 'NOT_VERIFIED' });
   }
   next();
 }
@@ -86,7 +95,7 @@ export function requireRole(...roles: Role[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: 'Silakan masuk terlebih dahulu.' });
     if (req.user.status !== 'verified') {
-      return res.status(403).json({ error: 'Akunmu belum diverifikasi admin.', code: 'NOT_VERIFIED' });
+      return res.status(403).json({ error: 'Akunmu belum aktif. Hubungi admin Teman Cerita.', code: 'NOT_VERIFIED' });
     }
     if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Kamu tidak punya akses ke fitur ini.' });
     next();
@@ -111,6 +120,15 @@ export function publicUser(u: UserRow) {
     avatarUrl: u.avatar_url,
     avatarTone: u.avatar_tone,
     statusText: u.status_text,
+    nickname: u.nickname,
+    band: u.band,
+    region: u.region,
+    gender: u.gender,
+    birthDate: u.birth_date,
+    specialization: u.specialization,
+    approach: u.approach,
+    languages: u.languages,
+    meetingUrl: u.meeting_url,
     status: u.status,
     rejectReason: u.reject_reason,
     verifiedAt: u.verified_at,

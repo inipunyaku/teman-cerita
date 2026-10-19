@@ -1,20 +1,23 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, CalendarClock, MessageCircle } from 'lucide-react';
+import { ArrowRight, ClipboardList, Star } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { firstName, fmtDate, fmtSchedule, greeting } from '@/lib/format';
-import type { Ticket } from '@/lib/types';
-import { Avatar, Clouds, ModeTag, StatusChip, TicketCard } from '@/components/ui';
+import { fmtYmd, greeting } from '@/lib/format';
+import type { Eligibility, Ticket } from '@/lib/types';
+import { Clouds } from '@/components/ui';
 import { HomeSkeleton } from '@/components/Skeletons';
-import { ACTIVE_STATUSES, REQUEST_TOPICS, type RequestTopic } from '@shared/constants';
+import { RegistrationCard } from './Registrations';
 
 export default function Home() {
   const { user } = useAuth();
   const { data, isLoading } = useQuery({ queryKey: ['tickets', 'mine'], queryFn: () => api.get<{ tickets: Ticket[] }>('/tickets') });
+  const { data: el } = useQuery({ queryKey: ['booking', 'eligibility'], queryFn: () => api.get<Eligibility>('/booking/eligibility') });
   const tickets = data?.tickets ?? [];
-  const active = tickets.find((t) => ACTIVE_STATUSES.includes(t.status));
-  const history = tickets.filter((t) => t !== active).slice(0, 3);
+  const active = tickets.find((t) => ['scheduled', 'in_progress'].includes(t.status));
+  const needFeedback = tickets.find((t) => t.status === 'completed' && !t.hasFeedback);
+  const awaiting = tickets.find((t) => t.status === 'awaiting_report');
+  const nickname = user!.nickname || user!.name.split(' ')[0];
 
   return (
     <div className="animate-rise">
@@ -22,63 +25,59 @@ export default function Home() {
         <Clouds className="pointer-events-none absolute -right-28 -top-6 w-[460px] animate-drift opacity-80 sm:-right-10 sm:w-[560px]" />
         <div className="relative max-w-lg">
           <p className="text-[15px] font-medium text-sky-800/80">{greeting()},</p>
-          <h1 className="display mt-1 text-[48px] italic text-sky-900 sm:text-[60px]">{firstName(user!.name)}.</h1>
+          <h1 className="display mt-1 text-[48px] italic text-sky-900 sm:text-[60px]">{nickname}.</h1>
           <p className="mt-3 text-[16px] leading-relaxed text-ink-soft">
-            {active ? 'Ini kabar terbaru soal sesimu.' : 'Lagi kepikiran sesuatu? Ceritakan ke psikolog — rahasiamu aman di sini.'}
+            {active ? 'Ini jadwal konselingmu yang akan datang.' : 'Lagi kepikiran sesuatu? Ceritakan ke psikolog profesional — rahasiamu aman di sini.'}
           </p>
-          {!active && !isLoading && (
-            <Link to="/ajukan" className="btn btn-primary mt-6 h-12 px-5 text-[15px]">
-              Ajukan sesi konseling <ArrowRight size={18} />
-            </Link>
+          {!active && !isLoading && el?.canBook && (
+            <>
+              <Link to="/buat-janji" className="btn btn-primary mt-6 h-12 px-5 text-[15px]">
+                Buat janji konseling <ArrowRight size={18} />
+              </Link>
+              {el.earliestDate && (
+                <p className="mt-3 text-[13px] text-sky-900/70">Jadwal bisa dipilih mulai {fmtYmd(el.earliestDate, 'd MMMM yyyy')} (jeda 2 minggu dari sesi sebelumnya).</p>
+              )}
+            </>
           )}
+          {!active && el && !el.canBook && <p className="mt-4 rounded-2xl bg-white/70 px-4 py-3 text-sm text-ink-soft">{el.reason}</p>}
         </div>
       </section>
 
       {isLoading ? (
         <HomeSkeleton />
       ) : (
-        <>
-          {active && (
-            <section className="mt-6">
-              <Link to={`/tiket/${active.id}`} className="group block">
-                <TicketCard code={active.code} className="transition-shadow group-hover:shadow-soft">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusChip status={active.status} />
-                    <ModeTag mode={active.mode} />
-                  </div>
-                  <p className="mt-2 font-semibold text-ink">
-                    {active.status === 'pending'
-                      ? 'Menunggu admin menjadwalkan psikolog'
-                      : active.status === 'reschedule_requested'
-                        ? 'Permintaan jadwal ulangmu sedang ditinjau'
-                        : fmtSchedule(active.scheduledStart, active.scheduledEnd)}
-                  </p>
-                  {active.psychologist && (
-                    <div className="mt-3 flex items-center gap-2.5">
-                      <Avatar name={active.psychologist.name} src={active.psychologist.avatarUrl} tone={active.psychologist.avatarTone} size={30} />
-                      <p className="text-sm text-ink-soft">
-                        bersama {active.psychologist.name}
-                        {active.psychologist.title ? `, ${active.psychologist.title}` : ''}
-                      </p>
-                    </div>
-                  )}
-                  {active.unread > 0 && (
-                    <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-sky-600 px-3 py-1 text-[12.5px] font-semibold text-white">
-                      <MessageCircle size={14} /> {active.unread} pesan baru
-                    </span>
-                  )}
-                </TicketCard>
-              </Link>
-            </section>
+        <div className="mt-6 space-y-4">
+          {active && <RegistrationCard t={active} />}
+
+          {needFeedback && (
+            <Link to={`/pendaftaran/${needFeedback.id}`} className="card flex items-center gap-4 p-4 transition-shadow hover:shadow-soft sm:p-5">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sun-50 text-sun-700"><Star size={22} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Bagaimana pengalaman konselingmu?</p>
+                <p className="text-sm text-ink-soft">Hasil sesi {needFeedback.code} sudah tersedia. Bantu kami dengan mengisi feedback singkat (±2 menit).</p>
+              </div>
+              <ArrowRight size={18} className="shrink-0 text-ink-faint" />
+            </Link>
+          )}
+          {awaiting && (
+            <Link to={`/pendaftaran/${awaiting.id}`} className="card flex items-center gap-4 p-4 transition-shadow hover:shadow-soft sm:p-5">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-700"><ClipboardList size={22} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Sesi kamu sudah selesai 💙</p>
+                <p className="text-sm text-ink-soft">Mohon menunggu hasil dan tindak lanjut dari psikolog.</p>
+              </div>
+              <ArrowRight size={18} className="shrink-0 text-ink-faint" />
+            </Link>
           )}
 
-          <section className="card card-pad mt-6">
+          <section className="card card-pad">
             <h2 className="font-semibold">Cara kerjanya</h2>
-            <ol className="mt-4 grid gap-5 sm:grid-cols-3">
+            <ol className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                ['Ajukan', 'Pilih topik dan cara ngobrol: chat, online meeting, atau tatap muka.'],
-                ['Dijadwalkan', 'Admin menyiapkan psikolog, jam, dan tempatnya. Kamu dikabari lewat aplikasi & email.'],
-                ['Cerita', 'Ngobrol dengan psikolog. Kalau berhalangan, ajukan jadwal ulang dari halaman tiket.'],
+                ['Persetujuan & skrining', 'Baca informed consent lalu isi skrining singkat tentang kondisimu.'],
+                ['Pilih psikolog & jadwal', 'Lihat slot yang masih tersedia, pilih psikolog, jam, dan media konseling.'],
+                ['Bercerita', 'Sesi 60 menit lewat tatap muka, chat, atau video/voice call Microsoft Teams.'],
+                ['Hasil & feedback', 'Lihat hasil dan tindak lanjut dari psikolog, lalu bagikan pengalamanmu.'],
               ].map(([t, d], i) => (
                 <li key={t} className="flex gap-3.5">
                   <span className="display grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-50 text-[20px] italic text-sky-700">{i + 1}</span>
@@ -89,31 +88,19 @@ export default function Home() {
                 </li>
               ))}
             </ol>
+            {el && (
+              <p className="mt-5 border-t border-line pt-4 text-[13px] text-ink-faint">
+                Kuota tahun ini: {el.yearCount} dari {el.maxPerYear} sesi terpakai · jeda minimal 2 minggu antar sesi.
+              </p>
+            )}
           </section>
 
-          {history.length > 0 && (
-            <section className="mt-8">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-semibold">Riwayat terakhir</h2>
-                <Link to="/tiket" className="text-sm font-semibold text-sky-700">Semua tiket</Link>
-              </div>
-              <div className="card divide-y divide-line">
-                {history.map((t) => (
-                  <Link key={t.id} to={`/tiket/${t.id}`} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-sky-50/50">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-canvas text-ink-soft">
-                      <CalendarClock size={18} strokeWidth={1.75} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{REQUEST_TOPICS[t.topic as RequestTopic]}</p>
-                      <p className="text-[12.5px] text-ink-faint">{t.code} · {fmtDate(t.scheduledStart ?? t.createdAt)}</p>
-                    </div>
-                    <StatusChip status={t.status} />
-                  </Link>
-                ))}
-              </div>
-            </section>
+          {tickets.length > 0 && (
+            <div className="flex justify-end">
+              <Link to="/pendaftaran" className="inline-flex items-center gap-1 text-sm font-semibold text-sky-700">Lihat semua pendaftaran <ArrowRight size={15} /></Link>
+            </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

@@ -4,14 +4,14 @@ import type { TicketEvent } from '@/lib/types';
 import { ROLE_LABEL } from '@shared/constants';
 
 const TONE: Record<string, string> = {
-  created: 'bg-sun-500',
-  scheduled: 'bg-sky-500',
-  rescheduled: 'bg-sky-500',
-  reschedule_requested: 'bg-peach-500',
-  reschedule_rejected: 'bg-peach-500',
+  created: 'bg-sky-500',
+  rescheduled: 'bg-peach-500',
+  meeting: 'bg-sky-500',
   started: 'bg-mint-500',
-  completed: 'bg-mint-500',
-  reviewed: 'bg-sun-500',
+  ended: 'bg-sun-500',
+  reported: 'bg-mint-500',
+  report_updated: 'bg-mint-500',
+  feedback: 'bg-sun-500',
   cancelled: 'bg-coral-500',
 };
 

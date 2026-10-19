@@ -10,6 +10,9 @@ import { loadUser, requireAuth } from './auth.js';
 import { addClient } from './events.js';
 import { AVATAR_DIR, authRouter } from './routes/auth.js';
 import { ticketsRouter } from './routes/tickets.js';
+import { bookingRouter } from './routes/booking.js';
+import { availabilityRouter } from './routes/availability.js';
+import { startJobs } from './jobs.js';
 import { adminRouter } from './routes/admin.js';
 import { statsRouter } from './routes/stats.js';
 import { notificationsRouter } from './routes/notifications.js';
@@ -63,6 +66,8 @@ app.get('/api/meta/units', (_req, res) => {
 });
 app.use('/api/auth', authRouter);
 app.use('/api/tickets', ticketsRouter);
+app.use('/api/booking', bookingRouter);
+app.use('/api/availability', availabilityRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/notifications', notificationsRouter);
@@ -76,6 +81,8 @@ if (fs.existsSync(webDist)) {
 }
 
 app.use(errorHandler);
+
+startJobs();
 
 app.listen(config.port, config.host, () => {
   console.log(`Teman Cerita berjalan di http://${config.host}:${config.port} (email: ${mailTransport ?? 'nonaktif'})`);

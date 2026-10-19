@@ -12,7 +12,7 @@ export default function Units() {
   const { data, isLoading } = useQuery({ queryKey: ['units-admin'], queryFn: () => api.get<{ units: Unit[] }>('/admin/units') });
   return (
     <div className="animate-rise">
-      <PageHeader title="Unit kerja" description="Daftar unit yang bisa dipilih karyawan saat mendaftar." actions={<button className="btn btn-primary" onClick={() => setEditing({ name: '', code: '', active: 1 })}><Plus size={18} /> Tambah unit</button>} />
+      <PageHeader title="Unit kerja" description="Unit kerja pada master data pekerja dan laporan dashboard." actions={<button className="btn btn-primary" onClick={() => setEditing({ name: '', code: '', active: 1 })}><Plus size={18} /> Tambah unit</button>} />
       {isLoading ? <TableSkeleton rows={5} /> : (
         <div className="card overflow-hidden">
           <table className="w-full">
@@ -20,8 +20,8 @@ export default function Units() {
               <tr>
                 <th className="table-head px-5 py-3">Unit</th>
                 <th className="table-head hidden px-3 py-3 sm:table-cell">Kode</th>
-                <th className="table-head px-3 py-3 text-right">Karyawan</th>
-                <th className="table-head px-3 py-3 text-right">Tiket</th>
+                <th className="table-head px-3 py-3 text-right">Pekerja</th>
+                <th className="table-head px-3 py-3 text-right">Sesi</th>
                 <th className="w-12 px-3" />
               </tr>
             </thead>
@@ -66,7 +66,7 @@ function UnitModal({ unit, onClose }: { unit: Partial<Unit>; onClose: () => void
         <Field label="Nama unit">{(id) => <input id={id} className="input" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Kode" optional>{(id) => <input id={id} className="input uppercase" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />}</Field>
         <label className="flex items-center gap-2.5 text-sm sm:col-span-2">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 accent-sky-600" /> Aktif (bisa dipilih saat pendaftaran)
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 accent-sky-600" /> Aktif (bisa dipilih di master data pekerja)
         </label>
       </div>
     </Modal>

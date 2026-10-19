@@ -4,10 +4,12 @@ import clsx from 'clsx';
 import { Loader2, MapPin, MessageCircle, Video, X } from 'lucide-react';
 import {
   MODE_LABEL,
-  SEVERITY_LABEL,
+  OUTCOME_LABEL,
+  SCREENING_LEVEL_LABEL,
   TICKET_STATUS_LABEL,
   type Mode,
-  type Severity,
+  type Outcome,
+  type ScreeningLevel,
   type TicketStatus,
 } from '@shared/constants';
 
@@ -79,11 +81,11 @@ export function Clouds({ className }: { className?: string }) {
 // Status
 
 const STATUS_STYLE: Record<TicketStatus, { chip: string; dot: string }> = {
-  pending: { chip: 'bg-sun-50 text-sun-700', dot: 'bg-sun-500' },
   scheduled: { chip: 'bg-sky-100 text-sky-700', dot: 'bg-sky-500' },
-  reschedule_requested: { chip: 'bg-peach-50 text-peach-700', dot: 'bg-peach-500' },
   in_progress: { chip: 'bg-mint-50 text-mint-700', dot: 'bg-mint-500 animate-pulseDot' },
-  completed: { chip: 'bg-[#EDF2F6] text-[#3E5566]', dot: 'bg-ink-faint' },
+  awaiting_report: { chip: 'bg-sun-50 text-sun-700', dot: 'bg-sun-500' },
+  completed: { chip: 'bg-mint-50 text-mint-700', dot: 'bg-mint-500' },
+  no_show: { chip: 'bg-[#EDF2F6] text-[#3E5566]', dot: 'bg-ink-faint' },
   cancelled: { chip: 'bg-coral-50 text-coral-700', dot: 'bg-coral-500' },
 };
 
@@ -97,18 +99,35 @@ export function StatusChip({ status, className }: { status: TicketStatus; classN
   );
 }
 
-export const SEVERITY_STYLE: Record<Severity, { chip: string; color: string }> = {
-  ringan: { chip: 'bg-mint-50 text-mint-700', color: '#17B4A4' },
-  sedang: { chip: 'bg-sun-50 text-sun-700', color: '#E8A317' },
-  berat: { chip: 'bg-coral-50 text-coral-700', color: '#E8604C' },
-  kritis: { chip: 'bg-rose-50 text-rose-700 ring-1 ring-rose-500/30', color: '#A3185A' },
+export const OUTCOME_STYLE: Record<Outcome, { chip: string; color: string }> = {
+  terminasi: { chip: 'bg-mint-50 text-mint-700', color: '#17B4A4' },
+  lanjutan: { chip: 'bg-sky-100 text-sky-700', color: '#2BA9EF' },
+  referral: { chip: 'bg-[#EEEAFB] text-[#5B4B9A]', color: '#8B7BD8' },
+  no_show: { chip: 'bg-[#EDF2F6] text-[#3E5566]', color: '#8AA0B0' },
 };
 
-export function SeverityChip({ severity }: { severity: Severity }) {
+export function OutcomeChip({ outcome }: { outcome: Outcome }) {
   return (
-    <span className={clsx('chip', SEVERITY_STYLE[severity].chip)}>
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: SEVERITY_STYLE[severity].color }} />
-      {SEVERITY_LABEL[severity]}
+    <span className={clsx('chip', OUTCOME_STYLE[outcome].chip)}>
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: OUTCOME_STYLE[outcome].color }} />
+      {OUTCOME_LABEL[outcome]}
+    </span>
+  );
+}
+
+export const SCREENING_STYLE: Record<ScreeningLevel, { chip: string; color: string }> = {
+  rendah: { chip: 'bg-mint-50 text-mint-700', color: '#17B4A4' },
+  sedang: { chip: 'bg-sun-50 text-sun-700', color: '#E8A317' },
+  tinggi: { chip: 'bg-coral-50 text-coral-700', color: '#E8604C' },
+};
+
+export function ScreeningChip({ level, score }: { level: string; score?: number }) {
+  const l = (level in SCREENING_STYLE ? level : 'sedang') as ScreeningLevel;
+  return (
+    <span className={clsx('chip', SCREENING_STYLE[l].chip)}>
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: SCREENING_STYLE[l].color }} />
+      Skrining {SCREENING_LEVEL_LABEL[l].toLowerCase()}
+      {score != null && <span className="font-normal opacity-80">· {score}</span>}
     </span>
   );
 }
@@ -123,11 +142,6 @@ export function ModeTag({ mode, className }: { mode: Mode; className?: string })
       {MODE_LABEL[mode]}
     </span>
   );
-}
-
-export function UrgencyTag({ urgency }: { urgency: string }) {
-  if (urgency !== 'high') return null;
-  return <span className="chip bg-coral-500 text-white">Mendesak</span>;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,7 +298,7 @@ export function Modal({
   description?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  size?: 'md' | 'lg';
+  size?: 'md' | 'lg' | 'xl';
 }) {
   useEffect(() => {
     if (!open) return;
@@ -304,7 +318,7 @@ export function Modal({
       <div
         className={clsx(
           'relative flex max-h-[92dvh] w-full animate-rise flex-col rounded-t-4xl bg-white shadow-pop sm:rounded-4xl',
-          size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg',
+          size === 'xl' ? 'sm:max-w-6xl' : size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg',
         )}
       >
         <div className="flex items-start justify-between gap-4 px-5 pb-2 pt-5 sm:px-7 sm:pt-6">
@@ -409,24 +423,6 @@ export function Segmented<T extends string>({
           {o.label}
         </button>
       ))}
-    </div>
-  );
-}
-
-/** Kartu ringkas tiket: nomor tiket sebagai label kecil, isi di bawahnya. */
-export function TicketCard({
-  code,
-  children,
-  className,
-}: {
-  code: string;
-  children?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={clsx('card p-5 sm:p-6', className)}>
-      <span className="font-mono text-[12px] font-semibold tracking-[.06em] text-ink-faint">{code}</span>
-      <div className="mt-2">{children}</div>
     </div>
   );
 }
