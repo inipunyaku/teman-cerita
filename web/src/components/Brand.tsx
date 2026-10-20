@@ -1,6 +1,10 @@
-import { useEffect, useId, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useState } from 'react';
 import clsx from 'clsx';
 import markSrc from '@/assets/brand/mark.png';
+import wordmarkSrc from '@/assets/brand/wordmark.png';
+import lettersSrc from '@/assets/brand/letters.png';
+import stickerSrc from '@/assets/brand/sticker.png';
+import { LETTERS, SHEET, STICKER } from './brand-letters';
 
 /** Warna yang diambil langsung dari logo-teman-cerita.png. */
 export const BRAND = {
@@ -12,16 +16,6 @@ export const BRAND = {
   outline: '#0F5BD6',
 } as const;
 
-const BRILIAN: [string, string][] = [
-  ['B', BRAND.dark],
-  ['R', BRAND.mid],
-  ['I', BRAND.light],
-  ['L', BRAND.dark],
-  ['i', '#3A95F6'],
-  ['a', BRAND.dark],
-  ['N', BRAND.light],
-];
-
 // ---------------------------------------------------------------------------
 // Logo statis (gambar dari aset)
 
@@ -30,28 +24,16 @@ export function LogoMark({ className = 'h-8' }: { className?: string }) {
   return <img src={markSrc} alt="" aria-hidden draggable={false} className={clsx('w-auto select-none object-contain', className)} />;
 }
 
-/** Tulisan "TEMAN CERITA / BRILiaN" dengan huruf berwarna seperti logo. */
-export function Wordmark({ size = 'md', className }: { size?: 'md' | 'lg'; className?: string }) {
-  const lg = size === 'lg';
-  return (
-    <span className={clsx('inline-flex flex-col font-brand font-bold leading-none', className)}>
-      <span className={clsx('tracking-[.07em]', lg ? 'text-[12.5px]' : 'text-[10px]')} style={{ color: BRAND.dark }}>
-        TEMAN CERITA
-      </span>
-      <span className={clsx('-mt-px tracking-[.01em]', lg ? 'text-[25px]' : 'text-[19px]')}>
-        {BRILIAN.map(([ch, color], i) => (
-          <span key={i} style={{ color }}>{ch}</span>
-        ))}
-      </span>
-    </span>
-  );
+/** Tulisan "TEMAN CERITA / BRILiaN" — dipotong langsung dari PNG logo, jadi hurufnya persis sama. */
+export function Wordmark({ className = 'h-9' }: { className?: string }) {
+  return <img src={wordmarkSrc} alt="" aria-hidden draggable={false} className={clsx('w-auto select-none object-contain', className)} />;
 }
 
 export function Logo({ className, size = 'md' }: { className?: string; size?: 'md' | 'lg' }) {
   return (
     <span className={clsx('inline-flex items-center gap-2', className)} aria-label="Teman Cerita BRILiaN">
       <LogoMark className={size === 'lg' ? 'h-11' : 'h-8'} />
-      <Wordmark size={size} />
+      <Wordmark className={size === 'lg' ? 'h-12' : 'h-9'} />
     </span>
   );
 }
@@ -59,33 +41,14 @@ export function Logo({ className, size = 'md' }: { className?: string; size?: 'm
 // ---------------------------------------------------------------------------
 // Logo animasi — digambar ulang sebagai SVG (koordinat mengikuti PNG asli 1254×1254)
 // supaya tiap bagian bisa bergerak: tangan dadah, mata melirik & berkedip, huruf bergoyang.
+// Stiker & huruf memakai potongan PNG aslinya (scripts/brand-assets.py), jadi bentuknya sama persis.
 
-// Lebar huruf Fredoka Bold per 1000 unit em, untuk menata huruf satu per satu.
-const ADV: Record<string, number> = { T: 640, E: 603, M: 809, A: 711, N: 670, ' ': 235, C: 631, R: 604, I: 239, B: 609, L: 569, i: 251, a: 557 };
-function layout(text: string, size: number, startX: number) {
-  let x = startX;
-  return [...text].map((ch) => {
-    const w = (ADV[ch] ?? 600) * (size / 1000);
-    const cx = x + w / 2;
-    x += w;
-    return { ch, cx, w };
-  });
-}
-const TITLE = layout('TEMAN CERITA', 120, 205);
-const BIG = layout('BRILiaN', 260, 150);
-// Kilau kecil di batang tiap huruf (posisi relatif terhadap lebar huruf).
-const GLOSS_X: Record<string, number> = { B: 0.22, R: 0.22, I: 0.45, L: 0.26, i: 0.45, a: 0.27, N: 0.21 };
-function gloss(l: { ch: string; cx: number; w: number }) {
-  const x = l.cx - l.w / 2 + l.w * (GLOSS_X[l.ch] ?? 0.25);
-  const y = l.ch === 'i' ? 1036 : l.ch === 'a' ? 1022 : 962;
-  return `M${x} ${y}q-1 -18 5 -32`;
-}
 const FONT = "'Fredoka Variable', Fredoka, 'Baloo 2', system-ui, sans-serif";
 
 type Variant = 'full' | 'peek';
 
 const VIEWBOX: Record<Variant, string> = {
-  full: '112 188 1080 930',
+  full: '96 180 1096 960',
   peek: '212 206 846 534',
 };
 
@@ -114,43 +77,12 @@ export function AnimatedLogo({
   return (
     <svg viewBox={VIEWBOX[variant]} className={clsx('lg-root overflow-visible', sleepy && 'lg-sleepy', className)} role="img" aria-label={title}>
       <defs>
-        {/* Stiker: siluet diburamkan lalu dipotong ambang → tepi putih membulat + garis biru tipis. */}
-        <filter id={id('stk')} x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="30" result="b" />
-          <feComponentTransfer in="b" result="outer"><feFuncA type="linear" slope="60" intercept="-7.6" /></feComponentTransfer>
-          <feComponentTransfer in="b" result="inner"><feFuncA type="linear" slope="60" intercept="-12" /></feComponentTransfer>
-          <feFlood floodColor={BRAND.outline} /><feComposite in2="outer" operator="in" result="o" />
-          <feFlood floodColor="#fff" /><feComposite in2="inner" operator="in" result="w" />
-          <feMerge><feMergeNode in="o" /><feMergeNode in="w" /></feMerge>
-        </filter>
         <clipPath id={id('cut')}>
           <rect x="0" y="0" width="1400" height={full ? 748 : 740} />
         </clipPath>
-        {BIG.map((l, i) => (
-          <clipPath key={i} id={id(`g${i}`)}>
-            <text x={l.cx} y={1075} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={260}>{l.ch}</text>
-          </clipPath>
-        ))}
       </defs>
 
-      {full && (
-        <g filter={`url(#${id('stk')})`} aria-hidden>
-          {/* Siluet padat (bukan huruf saja) supaya stiker tidak berlubang di sela huruf. */}
-          <ellipse cx="653" cy="338" rx="198" ry="112" />
-          <circle cx="384" cy="570" r="156" />
-          <circle cx="884" cy="582" r="152" />
-          <circle cx="633" cy="642" r="157" />
-          <circle cx="1002" cy="660" r="34" />
-          <rect x="300" y="600" width="680" height="150" rx="60" />
-          <rect x="214" y="770" width="836" height="74" rx="30" />
-          <rect x="160" y="902" width="890" height="168" rx="50" />
-          <text x="632" y="850" textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={120} letterSpacing="-1">TEMAN CERITA</text>
-          {BIG.map((l, i) => (
-            <text key={i} x={l.cx} y={1075} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={260}>{l.ch}</text>
-          ))}
-          <circle cx="1124" cy="940" r="40" />
-        </g>
-      )}
+      {full && <image href={stickerSrc} x={STICKER.x} y={STICKER.y} width={STICKER.w} height={STICKER.h} aria-hidden />}
 
       <g clipPath={`url(#${id('cut')})`}>
         {/* Karakter kiri */}
@@ -216,37 +148,24 @@ export function AnimatedLogo({
         </g>
       </g>
 
-      {full && (
-        <g fontFamily={FONT} fontWeight={700}>
-          {/* TEMAN CERITA — huruf naik-turun bergantian seperti ombak */}
-          {TITLE.map((l, i) =>
-            l.ch === ' ' ? null : (
-              <text key={i} x={l.cx} y={850} textAnchor="middle" fontSize={120} fill={D} className="lg-wavy" style={{ animationDelay: `${i * 0.08}s` }}>
-                {l.ch}
-              </text>
-            ),
-          )}
-          {/* BRILiaN — tiap huruf bergoyang kenyal */}
-          {BIG.map((l, i) => (
-            <g key={i} className="lg-jelly" style={{ animationDelay: `${i * 0.12}s` } as CSSProperties}>
-              <text x={l.cx} y={1075} textAnchor="middle" fontSize={260} fill={BRILIAN[i][1]}>{l.ch}</text>
-              <path
-                clipPath={`url(#${id(`g${i}`)})`}
-                d={gloss(l)}
-                stroke="#fff"
-                strokeOpacity=".85"
-                strokeWidth="13"
-                strokeLinecap="round"
-                fill="none"
-              />
-            </g>
-          ))}
-          <g className="lg-splash" stroke={BRAND.light} strokeLinecap="round">
-            <path d="M1092 934L1112 896" strokeWidth="20" />
-            <path d="M1124 974L1140 964" strokeWidth="28" />
+      {full &&
+        LETTERS.map((l, i) => (
+          // TEMAN CERITA naik-turun seperti ombak; BRILiaN bergoyang kenyal.
+          <g
+            key={i}
+            className={l.ch === 'splash' ? 'lg-splash' : l.row === 't' ? 'lg-wavy' : 'lg-jelly'}
+            style={{
+              animationDelay: `${l.row === 't' ? i * 0.08 : (i - 11) * 0.12}s`,
+              // Titik pusat eksplisit (kaki huruf); fill-box tidak andal untuk <svg> bersarang.
+              transformBox: 'view-box',
+              transformOrigin: `${l.ch === 'splash' ? l.x : l.x + l.w / 2}px ${l.y + l.h}px`,
+            }}
+          >
+            <svg x={l.x} y={l.y} width={l.w} height={l.h} viewBox={`${l.sx} ${l.sy} ${l.sw} ${l.sh}`} preserveAspectRatio="none">
+              <image href={lettersSrc} width={SHEET.w} height={SHEET.h} />
+            </svg>
           </g>
-        </g>
-      )}
+        ))}
     </svg>
   );
 }

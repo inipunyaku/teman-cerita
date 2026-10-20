@@ -69,7 +69,7 @@ Ringan `mint` · Sedang `sun` · Berat `coral` · Kritis `rose`. Urutan ini juga
 |---|---|---|
 | Display | **Instrument Serif** (italic) | Judul halaman, angka KPI besar, kata sapaan. 32–56 px, line-height 1.05, tracking -0.01em |
 | UI / body | **Onest** (variable) | Semua teks lain. 14–16 px, line-height 1.55 |
-| Merek | **Fredoka** (variable, `font-brand`) | Wordmark, judul kartu Beranda pekerja, nama sapaan pekerja laki-laki. Selaras dengan huruf membulat di logo |
+| Merek | **Fredoka** (variable, `font-brand`) | Judul kartu Beranda pekerja, nama sapaan pekerja laki-laki. Tulisan logo **tidak** memakai font ini — selalu gambar dari PNG |
 | Angka tabel | Onest + `font-variant-numeric: tabular-nums` | |
 
 Pola khas: judul campuran, misalnya "Halo, *Rani*" dengan nama dalam serif miring dan sisanya Onest semibold.
@@ -88,11 +88,13 @@ Skala: `12 / 13 / 14 / 16 / 18 / 22 / 28 / 36 / 48`.
 ## 5. Elemen khas
 
 ### Logo — Teman Cerita BRILiaN
-Sumber: `web/src/assets/auth/logo-teman-cerita.png` (gelembung chat + tiga karakter bulat, tulisan "TEMAN CERITA / BRILiaN"). Turunannya:
-- `assets/brand/mark.png` — karakter saja (latar transparan), dipakai `LogoMark` dan lockup `Logo` (mark + wordmark Fredoka berwarna).
+Sumber: `web/src/assets/auth/logo-teman-cerita.png` (gelembung chat + tiga karakter bulat, tulisan "TEMAN CERITA / BRILiaN"). Semua turunan dibuat ulang dengan `python scripts/brand-assets.py`:
+- `assets/brand/mark.png` — karakter saja (latar transparan), dipakai `LogoMark`.
+- `assets/brand/wordmark.png` — tulisan logo yang dipotong dari PNG; lockup `Logo` = mark + wordmark.
+- `assets/brand/letters.png` + `components/brand-letters.ts` — sprite tiap huruf beserta posisinya, dan `sticker.png` (bentuk stiker asli) untuk logo animasi.
 - `assets/brand/logo-sm.png` — logo stiker lengkap untuk loader awal di `index.html`.
 - `public/favicon.ico|png`, `apple-touch-icon.png`, `icon-192/512.png` — favicon & ikon PWA.
-- `AnimatedLogo` (`components/Brand.tsx`) — logo digambar ulang sebagai SVG agar bisa dianimasikan: karakter tengah melambai "dadah", mata karakter kanan melirik & berkedip, huruf "TEMAN CERITA" berombak, huruf "BRILiaN" bergoyang kenyal. Varian `peek` (karakter mengintip) dipakai di hero Beranda; `sleepy` saat malam. Dipakai juga oleh `BrandLoader` dan layar sambutan.
+- `AnimatedLogo` (`components/Brand.tsx`) — karakter digambar ulang sebagai SVG, sedangkan stiker & huruf memakai potongan PNG asli sehingga bentuk tulisannya identik. Animasinya: karakter tengah melambai "dadah", mata karakter kanan melirik & berkedip, huruf "TEMAN CERITA" berombak, huruf "BRILiaN" bergoyang kenyal. Varian `peek` (karakter mengintip) dipakai di hero Beranda; `sleepy` saat malam. Dipakai juga oleh `BrandLoader` dan layar sambutan.
 
 ### Beranda pekerja — personal
 Hero mengikuti waktu WIB: **pagi** (04–11, langit peach + matahari terbit), **siang** (11–15, biru cerah + matahari bersinar), **sore** (15–18, jingga + bukit), **malam** (18–04, biru tua + bulan & bintang, karakter tertidur). Jenis kelamin menentukan aksen & tipografi nama: **L** biru samudra + Fredoka, **P** merah muda kelopak + Instrument Serif miring, kosong → biru langit. Isi: sapaan + nama panggilan, ulang tahun (konfeti / hitung mundur 7 hari), cek perasaan harian (tersimpan di perangkat saja), daftar rawat diri sesuai waktu + latihan napas, afirmasi harian, dan ringkasan perjalanan konseling.
