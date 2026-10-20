@@ -203,20 +203,3 @@ export function NotificationSkeleton() {
     </div>
   );
 }
-
-/** Saat sesi login sedang dicek. */
-export function AppSkeleton() {
-  return (
-    <div className="min-h-dvh" role="status" aria-live="polite">
-      <span className="sr-only">Memuat Teman Cerita…</span>
-      <div className="flex h-16 items-center justify-between border-b border-line/70 px-4 sm:px-6">
-        <Sk className="h-7 w-36" />
-        <Sk className="h-9 w-9 rounded-full" />
-      </div>
-      <div className="mx-auto max-w-5xl space-y-4 px-4 pt-8 sm:px-6">
-        <Sk className="h-48 w-full rounded-4xl" />
-        <Sk className="h-28 w-full rounded-3xl" />
-      </div>
-    </div>
-  );
-}

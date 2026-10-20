@@ -5,11 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#F7FAFC" />
     <meta name="description" content="Teman Cerita — layanan konseling psikologi untuk karyawan." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <title>Teman Cerita</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Loader awal sebelum JavaScript siap; diganti React saat aplikasi dimuat. -->
+      <div class="boot" role="status" aria-label="Memuat Teman Cerita">
+        <img src="/src/assets/brand/logo-sm.png" alt="" width="220" />
+      </div>
+    </div>
+    <style>
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; background: linear-gradient(#f0f8fe, #fff 55%, #eef7ff); }
+      .boot img { width: min(60vw, 220px); height: auto; opacity: 0; animation: bootIn .5s .2s ease-out forwards, bootBob 2.4s .7s ease-in-out infinite; }
+      @keyframes bootIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+      @keyframes bootBob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-10px) rotate(1.5deg); } }
+      @media (prefers-reduced-motion: reduce) { .boot img { animation: none; opacity: 1; } }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

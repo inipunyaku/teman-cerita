@@ -12,42 +12,13 @@ import {
   type ScreeningLevel,
   type TicketStatus,
 } from '@shared/constants';
+import { LogoMark } from './Brand';
 
 // ---------------------------------------------------------------------------
 // Merek
 
-export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 40" className={className} aria-hidden>
-      <path
-        d="M13 33c-5.5 0-9-3.9-9-8.6 0-4.3 3.1-7.8 7.3-8.5C12.4 9.8 17.3 5.5 23.2 5.5c5 0 9.3 3.1 11 7.6.8-.2 1.6-.3 2.5-.3 5.5 0 9.8 4.5 9.8 10s-4.3 10.1-9.8 10.1H19l-6.8 5.1c-.7.5-1.7-.2-1.4-1L13 33z"
-        className="fill-sky-500"
-      />
-      <path
-        d="M14 15.5c1.4-4 5-6.6 9.2-6.6"
-        stroke="#fff"
-        strokeOpacity=".45"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <circle cx="21" cy="22" r="2.3" fill="#fff" />
-      <circle cx="31" cy="22" r="2.3" fill="#fff" />
-    </svg>
-  );
-}
-
-export function Logo({ className, size = 'md' }: { className?: string; size?: 'md' | 'lg' }) {
-  return (
-    <span className={clsx('inline-flex items-center gap-2', className)}>
-      <LogoMark className={size === 'lg' ? 'h-10 w-11' : 'h-7 w-8'} />
-      <span className={clsx('leading-none text-ink', size === 'lg' ? 'text-[26px]' : 'text-[19px]')}>
-        <span className="font-semibold tracking-tight">teman</span>{' '}
-        <span className="display italic text-sky-600">cerita</span>
-      </span>
-    </span>
-  );
-}
+// Logo diambil dari aset logo-teman-cerita.png — lihat Brand.tsx.
+export { Logo, LogoMark } from './Brand';
 
 /** Awan dekoratif untuk latar halaman. */
 export function Clouds({ className }: { className?: string }) {
@@ -275,7 +246,7 @@ export function EmptyState({
 }) {
   return (
     <div className={clsx('flex flex-col items-center px-6 py-12 text-center', className)}>
-      <LogoMark className="mb-4 h-12 w-14 opacity-80" />
+      <LogoMark className="mb-4 h-14" />
       <p className="font-semibold text-ink">{title}</p>
       {description && <p className="mt-1 max-w-sm text-sm text-ink-soft">{description}</p>}
       {action && <div className="mt-5">{action}</div>}

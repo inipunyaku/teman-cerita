@@ -21,6 +21,7 @@ export default {
       fontFamily: {
         sans: ['"Onest Variable"', 'Onest', 'system-ui', 'sans-serif'],
         display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        brand: ['"Fredoka Variable"', 'Fredoka', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       borderRadius: { xl: '14px', '2xl': '18px', '3xl': '22px', '4xl': '28px' },

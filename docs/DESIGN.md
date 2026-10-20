@@ -11,7 +11,7 @@ Warna dasar diturunkan dari palet BRI Corporate University (`dash-bflp`): biru l
 1. **Tenang dulu, baru informatif.** Karyawan datang dalam kondisi tidak baik-baik saja. Layar karyawan dibuat lega, satu ajakan utama per layar, dan kalimatnya hangat.
 2. **Padat untuk yang bekerja.** Layar admin dan psikolog lebih rapat: tabel, filter, angka. Tetap memakai bahasa visual yang sama.
 3. **Status selalu terlihat.** Setiap tiket punya warna status dan linimasa yang konsisten di semua peran.
-4. **Satu hal yang khas, bukan sepuluh.** Ciri khasnya hanya dua: logo awan-bicara dan judul serif miring. Selebihnya, termasuk kartu tiket, dibuat polos.
+4. **Satu hal yang khas, bukan sepuluh.** Ciri khasnya hanya dua: logo karakter Teman Cerita BRILiaN dan judul serif miring. Selebihnya, termasuk kartu tiket, dibuat polos.
 
 ### Anti-"AI slop" (aturan yang sengaja dihindari)
 - Tidak ada gradien ungu–biru, tidak ada teks gradien, tidak ada efek glassmorphism di mana-mana.
@@ -69,6 +69,7 @@ Ringan `mint` · Sedang `sun` · Berat `coral` · Kritis `rose`. Urutan ini juga
 |---|---|---|
 | Display | **Instrument Serif** (italic) | Judul halaman, angka KPI besar, kata sapaan. 32–56 px, line-height 1.05, tracking -0.01em |
 | UI / body | **Onest** (variable) | Semua teks lain. 14–16 px, line-height 1.55 |
+| Merek | **Fredoka** (variable, `font-brand`) | Wordmark, judul kartu Beranda pekerja, nama sapaan pekerja laki-laki. Selaras dengan huruf membulat di logo |
 | Angka tabel | Onest + `font-variant-numeric: tabular-nums` | |
 
 Pola khas: judul campuran, misalnya "Halo, *Rani*" dengan nama dalam serif miring dan sisanya Onest semibold.
@@ -86,8 +87,15 @@ Skala: `12 / 13 / 14 / 16 / 18 / 22 / 28 / 36 / 48`.
 
 ## 5. Elemen khas
 
-### Logo — "Awan Bicara"
-Gelembung chat berbentuk awan (tiga lengkung) berwarna `sky-500`, dengan ekor kecil di kiri bawah dan dua titik "mata" putih yang membuatnya terasa seperti teman. Wordmark: "teman" dalam Onest semibold, "cerita" dalam Instrument Serif italic.
+### Logo — Teman Cerita BRILiaN
+Sumber: `web/src/assets/auth/logo-teman-cerita.png` (gelembung chat + tiga karakter bulat, tulisan "TEMAN CERITA / BRILiaN"). Turunannya:
+- `assets/brand/mark.png` — karakter saja (latar transparan), dipakai `LogoMark` dan lockup `Logo` (mark + wordmark Fredoka berwarna).
+- `assets/brand/logo-sm.png` — logo stiker lengkap untuk loader awal di `index.html`.
+- `public/favicon.ico|png`, `apple-touch-icon.png`, `icon-192/512.png` — favicon & ikon PWA.
+- `AnimatedLogo` (`components/Brand.tsx`) — logo digambar ulang sebagai SVG agar bisa dianimasikan: karakter tengah melambai "dadah", mata karakter kanan melirik & berkedip, huruf "TEMAN CERITA" berombak, huruf "BRILiaN" bergoyang kenyal. Varian `peek` (karakter mengintip) dipakai di hero Beranda; `sleepy` saat malam. Dipakai juga oleh `BrandLoader` dan layar sambutan.
+
+### Beranda pekerja — personal
+Hero mengikuti waktu WIB: **pagi** (04–11, langit peach + matahari terbit), **siang** (11–15, biru cerah + matahari bersinar), **sore** (15–18, jingga + bukit), **malam** (18–04, biru tua + bulan & bintang, karakter tertidur). Jenis kelamin menentukan aksen & tipografi nama: **L** biru samudra + Fredoka, **P** merah muda kelopak + Instrument Serif miring, kosong → biru langit. Isi: sapaan + nama panggilan, ulang tahun (konfeti / hitung mundur 7 hari), cek perasaan harian (tersimpan di perangkat saja), daftar rawat diri sesuai waktu + latihan napas, afirmasi harian, dan ringkasan perjalanan konseling.
 
 ### Kartu tiket
 Kartu biasa (border `line`, radius 22). Nomor `TC-2026-0012` tampil sebagai label kecil font mono `ink-faint` di atas, lalu status, metode, dan topik. Tidak ada ornamen tiket konser.

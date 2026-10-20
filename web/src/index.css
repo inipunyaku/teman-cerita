@@ -1,4 +1,5 @@
 @import '@fontsource-variable/onest';
+@import '@fontsource-variable/fredoka';
 @import '@fontsource/instrument-serif/400.css';
 @import '@fontsource/instrument-serif/400-italic.css';
 
@@ -143,12 +144,6 @@
 .tc-splash-in { animation: tcFadeIn .35s ease-out both; }
 .tc-splash-out { animation: tcFadeOut .52s ease-in forwards; }
 .tc-pop { animation: tcPop .7s cubic-bezier(.34, 1.56, .64, 1) both; }
-.tc-bob { animation: tcBob 2.4s ease-in-out infinite; }
-.tc-shadow { animation: tcShadow 2.4s ease-in-out infinite; }
-.tc-blink { transform-box: fill-box; transform-origin: center; animation: tcBlink 3.2s ease-in-out infinite; }
-.tc-bubble { transform-origin: bottom left; animation: tcPop .5s .55s cubic-bezier(.34, 1.56, .64, 1) both; }
-.tc-dot { animation: tcDot 1s ease-in-out infinite; }
-.tc-heart { opacity: 0; animation: tcHeart 2.4s ease-out infinite; }
 .tc-twinkle { animation: tcTwinkle 1.8s ease-in-out infinite; }
 .tc-drift-a { animation: tcDrift 9s ease-in-out infinite alternate; }
 .tc-drift-b { animation: tcDrift 7s ease-in-out infinite alternate-reverse; }
@@ -160,20 +155,90 @@
 @keyframes tcFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tcFadeOut { to { opacity: 0; transform: scale(1.04); filter: blur(2px); } }
 @keyframes tcPop { 0% { opacity: 0; transform: scale(.6) translateY(16px); } 100% { opacity: 1; transform: none; } }
-@keyframes tcBob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-10px) rotate(1.5deg); } }
-@keyframes tcShadow { 0%, 100% { transform: translateX(-50%) scaleX(1); opacity: .9; } 50% { transform: translateX(-50%) scaleX(.78); opacity: .5; } }
-@keyframes tcBlink { 0%, 44%, 50%, 100% { transform: scaleY(1); } 47% { transform: scaleY(.12); } }
-@keyframes tcDot { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
-@keyframes tcHeart {
-  0% { opacity: 0; transform: translateY(0) scale(.5); }
-  15% { opacity: 1; transform: translateY(-6px) scale(1); }
-  100% { opacity: 0; transform: translateY(-46px) translateX(8px) scale(.9) rotate(12deg); }
-}
 @keyframes tcTwinkle { 0%, 100% { opacity: .25; transform: scale(.7) rotate(0); } 50% { opacity: 1; transform: scale(1.1) rotate(20deg); } }
 @keyframes tcDrift { from { transform: translateX(0); } to { transform: translateX(40px); } }
 @keyframes tcGlow { 0%, 100% { opacity: .7; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.12); } }
 @keyframes tcLine { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes tcFill { to { width: 100%; } }
+
+/* ---- Logo animasi (components/Brand.tsx) ---- */
+.lg-root :is(.lg-bob, .lg-float, .lg-dot, .lg-happy, .lg-look, .lg-blink, .lg-hug, .lg-chat, .lg-wave, .lg-wavy, .lg-jelly, .lg-splash, .lg-zzz) { transform-box: fill-box; }
+.lg-bob { transform-origin: 50% 100%; animation: lgBob 2.6s ease-in-out infinite; }
+.lg-bob-lg { animation-name: lgBobLg; }
+.lg-float { transform-origin: 20% 100%; animation: lgFloat 3.2s ease-in-out infinite; }
+.lg-dot { transform-origin: center; animation: lgDot 1.2s ease-in-out infinite; }
+.lg-happy { transform-origin: 50% 100%; animation: lgHappy 3.6s ease-in-out infinite; }
+.lg-look { animation: lgLook 4.8s ease-in-out infinite; }
+.lg-blink { transform-origin: center; animation: lgBlink 3.4s ease-in-out infinite; }
+.lg-hug { transform-origin: 0% 100%; animation: lgHug 2.6s ease-in-out infinite; }
+.lg-chat { transform-origin: center top; animation: lgChat 2.4s ease-in-out infinite; }
+.lg-wave { transform-origin: 40% 100%; animation: lgWave 3s ease-in-out infinite; }
+.lg-wavy { transform-origin: 50% 100%; animation: lgWavy 2.4s ease-in-out infinite; }
+.lg-jelly { transform-origin: 50% 100%; animation: lgJelly 2.4s cubic-bezier(.3, 1.4, .6, 1) infinite; }
+.lg-splash { transform-origin: 0% 100%; animation: lgSplash 1.6s ease-in-out infinite; }
+.lg-zzz { opacity: 0; animation: lgZzz 2.4s ease-out infinite; }
+.lg-sleepy .lg-bob { animation-duration: 4.2s; }
+.lg-sleepy .lg-dot { animation: lgDotSlow 2.8s ease-in-out infinite; }
+.lg-loader { animation: tcFadeIn .3s .18s ease-out both; }
+.lg-ellipsis::after { content: '…'; display: inline-block; width: 1.2em; text-align: left; animation: lgEllipsis 1.2s steps(4, end) infinite; }
+
+@keyframes lgBob { 0%, 100% { transform: translateY(0) scale(1, 1); } 45% { transform: translateY(-14px) scale(.985, 1.02); } 70% { transform: translateY(0) scale(1.02, .98); } }
+@keyframes lgBobLg { 0%, 100% { transform: translateY(0) scale(1, 1); } 45% { transform: translateY(-22px) scale(.98, 1.03); } 72% { transform: translateY(0) scale(1.03, .97); } }
+@keyframes lgFloat { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-16px) rotate(-2.5deg); } }
+@keyframes lgDot { 0%, 60%, 100% { transform: translateY(0); opacity: .55; } 30% { transform: translateY(-22px); opacity: 1; } }
+@keyframes lgDotSlow { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }
+@keyframes lgHappy { 0%, 70%, 100% { transform: none; } 76% { transform: translateY(-8px) scale(1.1, .8); } 84% { transform: none; } 88% { transform: translateY(-5px) scale(1.06, .88); } 94% { transform: none; } }
+@keyframes lgLook {
+  0%, 14% { transform: translate(0, 0); }
+  20%, 40% { transform: translate(-18px, 4px); }
+  46%, 64% { transform: translate(16px, -8px); }
+  70%, 84% { transform: translate(-4px, 10px); }
+  90%, 100% { transform: translate(0, 0); }
+}
+@keyframes lgBlink { 0%, 40%, 46%, 82%, 88%, 100% { transform: scaleY(1); } 43%, 85% { transform: scaleY(.1); } }
+@keyframes lgHug { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
+@keyframes lgChat { 0%, 60%, 100% { transform: scale(1); } 70% { transform: scale(.85, 1.35); } 80% { transform: scale(1.05, .9); } 90% { transform: scale(.9, 1.25); } }
+@keyframes lgWave {
+  0%, 8% { transform: none; }
+  18% { transform: translate(-14px, -186px) rotate(0); }
+  26% { transform: translate(-14px, -186px) rotate(24deg); }
+  34% { transform: translate(-14px, -186px) rotate(-16deg); }
+  42% { transform: translate(-14px, -186px) rotate(24deg); }
+  50% { transform: translate(-14px, -186px) rotate(-16deg); }
+  58% { transform: translate(-14px, -186px) rotate(18deg); }
+  66% { transform: translate(-14px, -186px) rotate(0); }
+  78%, 100% { transform: none; }
+}
+@keyframes lgWavy { 0%, 50%, 100% { transform: translateY(0); } 20% { transform: translateY(-16px) rotate(-4deg); } 35% { transform: translateY(3px) rotate(2deg); } }
+@keyframes lgJelly {
+  0%, 52%, 100% { transform: none; }
+  10% { transform: scale(1.1, .86) rotate(-6deg); }
+  22% { transform: translateY(-22px) scale(.93, 1.1) rotate(5deg); }
+  34% { transform: scale(1.05, .95) rotate(-3deg); }
+  44% { transform: rotate(1.5deg); }
+}
+@keyframes lgSplash { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: translate(8px, -6px) scale(1.18); opacity: .75; } }
+@keyframes lgZzz {
+  0% { opacity: 0; transform: translate(0, 10px) scale(.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(30px, -60px) scale(1.1); }
+}
+@keyframes lgEllipsis { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 -10% 0 0); } }
+
+/* ---- Beranda pekerja: langit pagi/siang/sore/malam ---- */
+.hm-spin { animation: hmSpin 60s linear infinite; }
+.hm-glow { animation: hmGlow 4s ease-in-out infinite; }
+.hm-sunrise { animation: hmSunrise 1.8s cubic-bezier(.2, .8, .2, 1) both; }
+.hm-confetti { opacity: 0; animation: hmConfetti 3.6s linear infinite; }
+
+@keyframes hmSpin { to { transform: rotate(360deg); } }
+@keyframes hmGlow { 0%, 100% { opacity: .7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes hmSunrise { from { opacity: 0; transform: translateY(70px); } to { opacity: 1; transform: none; } }
+@keyframes hmConfetti {
+  0% { opacity: 0; transform: translateY(-24px) rotate(0); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(380px) translateX(30px) rotate(560deg); }
+}
 
 @keyframes shimmer {
   from { background-position: 100% 0; }

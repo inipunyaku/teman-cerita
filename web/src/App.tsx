@@ -7,7 +7,7 @@ import { api } from './lib/api';
 import { homeFor, useAuth } from './lib/auth';
 import { useRealtime } from './lib/realtime';
 import type { Role } from '@shared/constants';
-import { AppSkeleton, StatsSkeleton } from './components/Skeletons';
+import { BrandLoader } from './components/Brand';
 import { EmployeeLayout } from './layouts/EmployeeLayout';
 import { StaffLayout } from './layouts/StaffLayout';
 import Login from './pages/auth/Login';
@@ -32,7 +32,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 function Guard({ role, children }: { role: Role; children: ReactNode }) {
   const { user, loading } = useAuth();
   const loc = useLocation();
-  if (loading) return <AppSkeleton />;
+  if (loading) return <BrandLoader />;
   if (!user) return <Navigate to="/masuk" replace state={{ from: loc.pathname + loc.search }} />;
   if (user.role !== role) return <Navigate to={homeFor(user)} replace />;
   return <>{children}</>;
@@ -40,7 +40,7 @@ function Guard({ role, children }: { role: Role; children: ReactNode }) {
 
 function GuestOnly({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <AppSkeleton />;
+  if (loading) return <BrandLoader />;
   if (user) return <Navigate to={homeFor(user)} replace />;
   return <>{children}</>;
 }
@@ -84,7 +84,7 @@ function PsychShell() {
 export default function App() {
   useRealtime();
   return (
-    <Suspense fallback={<StatsSkeleton />}>
+    <Suspense fallback={<BrandLoader />}>
       <Routes>
         <Route path="/masuk" element={<GuestOnly><Login /></GuestOnly>} />
         <Route path="/daftar" element={<Navigate to="/masuk" replace />} />

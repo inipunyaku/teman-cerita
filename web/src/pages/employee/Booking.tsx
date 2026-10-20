@@ -285,7 +285,7 @@ function ConsentStep({ onAgree, onDecline }: { onAgree: () => void; onDecline: (
     <section className="card overflow-hidden">
       <div className="grain relative bg-gradient-to-br from-sky-100 via-sky-50 to-haze px-5 py-7 sm:px-8">
         <div className="flex items-center gap-2.5">
-          <LogoMark className="h-8 w-9" />
+          <LogoMark className="h-9" />
           <span className="text-[15px] font-semibold text-sky-900">Teman Cerita BRILiaN</span>
         </div>
         <h1 className="mt-5 text-[28px] font-semibold leading-tight tracking-tight sm:text-[34px]">
@@ -586,7 +586,7 @@ function NotEligible({ el }: { el: Eligibility }) {
 function Declined({ onBack }: { onBack: () => void }) {
   return (
     <div className="mx-auto max-w-xl animate-rise py-6 text-center">
-      <LogoMark className="mx-auto h-14 w-16" />
+      <LogoMark className="mx-auto h-20" />
       <h1 className="mt-5 text-[26px] font-semibold leading-tight tracking-tight">Terima kasih sudah membaca</h1>
       <p className="mx-auto mt-2 max-w-md text-ink-soft">
         Kamu memilih untuk tidak melanjutkan pendaftaran. Tidak apa-apa — kapan pun kamu siap, Teman Cerita BRILiaN tetap ada untukmu.
