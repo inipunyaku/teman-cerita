@@ -54,9 +54,9 @@ export function NotificationBell({ align = 'right' }: { align?: 'left' | 'right'
         aria-label={`Notifikasi${unread ? `, ${unread} belum dibaca` : ''}`}
         aria-expanded={open}
       >
-        <Bell size={19} strokeWidth={1.75} />
+        <Bell size={20} strokeWidth={1.75} absoluteStrokeWidth />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-coral-500 px-1 text-[10.5px] font-bold text-white ring-2 ring-white">
+          <span className="absolute right-px top-[3px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-white bg-coral-500 px-[3px] text-[10.5px] font-bold leading-none text-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}

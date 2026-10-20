@@ -1,0 +1,19 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="130" height="172" viewBox="0 0 130 172" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Dekorasi jendela">
+<path id="Vector" d="M14 166V68C14 54.474 19.3732 41.5019 28.9376 31.9376C38.5019 22.3732 51.474 17 65 17C78.526 17 91.4981 22.3732 101.062 31.9376C110.627 41.5019 116 54.474 116 68V166H14Z" fill="white" stroke-width="3" stroke="#DCEBF8"/>
+<path id="Vector_2" d="M22 160V69C22 57.5957 26.5303 46.6585 34.5944 38.5944C42.6585 30.5303 53.5957 26 65 26C76.4043 26 87.3415 30.5303 95.4056 38.5944C103.47 46.6585 108 57.5957 108 69V160H22Z" fill="url(#paint0_linear_0_597)"/>
+<path id="Vector_3" d="M36 84C30 84 26 80 26 75C26 71 29 67 34 67C36 61 41 57 47 57C53 57 57 60 59 65H61C67 65 71 69 71 74C71 79 67 84 61 84H36Z" fill="white" fill-opacity="0.9"/>
+<path id="Vector_4" d="M65 26V100M65 100V160M65 100H22M65 100H108" stroke-width="4" stroke="white"/>
+<path id="Vector_5" d="M119.5 160H10.5C8.01472 160 6 162.015 6 164.5C6 166.985 8.01472 169 10.5 169H119.5C121.985 169 124 166.985 124 164.5C124 162.015 121.985 160 119.5 160Z" fill="#E3EFFA"/>
+<path id="Vector_6" d="M98 138C96 122 86 110 71 106C73 120 81 132 98 138Z" fill="#A9CDF2"/>
+<path id="Vector_7" d="M98 138C100 118 108 104 123 98C122 114 115 128 98 138Z" fill="#8FBCEB"/>
+<path id="Vector_8" d="M98 138C92 127 92 113 100 102C106 113 106 127 98 138Z" fill="#BCDAF7"/>
+<path id="Vector_9" d="M86 136H112L109 160H89L86 136Z" fill="#C3DCF5"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_597" x1="-1.57883e-06" y1="26" x2="-1.57883e-06" y2="160" gradientUnits="userSpaceOnUse">
+<stop stop-color="#C9E4FC"/>
+<stop offset="1" stop-color="#F1F8FF"/>
+</linearGradient>
+</defs>
+</svg>

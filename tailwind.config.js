@@ -17,6 +17,8 @@ export default {
         rose: { 50: '#FBE3EA', 500: '#B4234A', 700: '#8E1838' },
         peach: { 50: '#FDE9DA', 500: '#F08A3E', 700: '#8A3B12' },
         haze: '#FBEFE7',
+        // Warna logo (Brand.tsx BRAND) — sama dengan variabel Figma brand/*.
+        brand: { DEFAULT: '#257CF3', navy: '#014AB2', cyan: '#6ED5FD' },
       },
       fontFamily: {
         sans: ['"Onest Variable"', 'Onest', 'system-ui', 'sans-serif'],
