@@ -247,6 +247,17 @@
 .hs-bird-bob { animation: hsBirdBob 1.3s ease-in-out infinite alternate; }
 .hs-flap { transform-box: fill-box; transform-origin: 50% 100%; animation: hsFlap .34s ease-in-out infinite alternate; }
 .hm-confetti { opacity: 0; animation: hmConfetti 3.6s linear infinite; }
+/* Tangan 👋 di sapaan & "pop" saat memilih perasaan / mencentang tips */
+.hs-hand { transform-origin: 70% 80%; animation: hsHand 2.8s ease-in-out infinite; }
+.hm-pop { animation: hmPop .5s cubic-bezier(.34, 1.56, .64, 1); }
+
+@keyframes hsHand {
+  0%, 60%, 100% { transform: rotate(0); }
+  8%, 24%, 40% { transform: rotate(18deg); }
+  16%, 32% { transform: rotate(-10deg); }
+  48% { transform: rotate(6deg); }
+}
+@keyframes hmPop { 0% { transform: scale(.85); } 45% { transform: scale(1.3); } 75% { transform: scale(1.02); } 100% { transform: scale(1.1); } }
 
 @keyframes hsBreathe { to { transform: scale(1.08); } }
 @keyframes hsSpin { to { transform: rotate(360deg); } }

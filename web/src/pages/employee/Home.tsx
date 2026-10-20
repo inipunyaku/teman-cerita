@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Calendar, ClipboardList, Star, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { fmtDay, fmtTime, fmtYmd } from '@/lib/format';
@@ -9,7 +9,7 @@ import { SKY, accentFor, dailySeed, dayPart, daysToBirthday, useWibNow } from '@
 import type { Eligibility, Ticket } from '@/lib/types';
 import { HomeSkeleton } from '@/components/Skeletons';
 import { RegistrationCard } from './Registrations';
-import { Affirmation, GreetingHero, IconChip, Journey, MoodCheckin, SelfCare } from './HomeParts';
+import { Affirmation, GreetingHero, Journey, MoodCheckin, SelfCare } from './HomeParts';
 
 /** "hari ini" / "besok" / "pada Senin, 2 Nov" — enak dibaca di tengah kalimat. */
 function sessionDay(iso: string) {
@@ -17,11 +17,10 @@ function sessionDay(iso: string) {
   return d === 'Hari ini' || d === 'Besok' ? d.toLowerCase() : `pada ${d}`;
 }
 
-/** Kartu ajakan satu baris (mis. isi feedback) dengan lencana ikon di kiri. */
-function NoticeCard({ to, icon, title, children }: { to: string; icon: LucideIcon; title: string; children: string }) {
+/** Kartu ajakan satu baris (mis. isi feedback). */
+function NoticeCard({ to, title, children }: { to: string; title: string; children: string }) {
   return (
-    <Link to={to} className="card flex items-center gap-4 p-4 shadow-soft transition-shadow hover:shadow-pop sm:px-6 sm:py-5">
-      <IconChip icon={icon} />
+    <Link to={to} className="card flex items-center gap-4 p-5 shadow-soft transition-shadow hover:shadow-pop sm:px-6">
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-semibold">{title}</p>
         <p className="mt-0.5 text-[13.5px] leading-normal text-ink-soft">{children}</p>
@@ -97,12 +96,12 @@ export default function Home() {
             {active && <RegistrationCard t={active} />}
 
             {needFeedback && (
-              <NoticeCard to={`/pendaftaran/${needFeedback.id}`} icon={Star} title={`Bagaimana pengalaman konselingmu, ${nickname}?`}>
+              <NoticeCard to={`/pendaftaran/${needFeedback.id}`} title={`Bagaimana pengalaman konselingmu, ${nickname}?`}>
                 {`Hasil sesi ${needFeedback.code} sudah tersedia. Bantu kami dengan mengisi feedback singkat (±2 menit).`}
               </NoticeCard>
             )}
             {awaiting && (
-              <NoticeCard to={`/pendaftaran/${awaiting.id}`} icon={ClipboardList} title="Sesi kamu sudah selesai 💙">
+              <NoticeCard to={`/pendaftaran/${awaiting.id}`} title="Sesi kamu sudah selesai 💙">
                 Mohon menunggu hasil dan tindak lanjut dari psikolog.
               </NoticeCard>
             )}

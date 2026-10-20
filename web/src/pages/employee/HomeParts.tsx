@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { format, subDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { ArrowRight, Cake, Calendar, Check, Heart, Moon, Pause, Play, Quote, Route, Smile, Sparkle, Sun, Sunrise, Sunset, Wind, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Cake, Check, Heart, Moon, Pause, Play, Sparkle, Sun, Sunrise, Sunset, Wind } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import { fmtDate, fullPsychName, ymd } from '@/lib/format';
 import { SKY, type Accent, type DayPart, useLocal } from '@/lib/personal';
@@ -13,15 +13,6 @@ import windowArt from '@/assets/home/window.svg';
 import cloudArt from '@/assets/home/cloud.svg';
 
 const PART_ICON = { pagi: Sunrise, siang: Sun, sore: Sunset, malam: Moon } as const;
-
-/** Lencana ikon bulat di kepala kartu (komponen Figma "Icon Chip"). */
-export function IconChip({ icon: Icon, size = 44, className }: { icon: LucideIcon; size?: 44 | 40 | 32; className?: string }) {
-  return (
-    <span className={clsx('grid shrink-0 place-items-center rounded-full bg-sky-50 text-brand', className)} style={{ width: size, height: size }}>
-      <Icon size={size === 32 ? 16 : 20} strokeWidth={2} absoluteStrokeWidth />
-    </span>
-  );
-}
 
 const cardTitle = 'font-brand text-[19px] font-semibold leading-[1.3]';
 
@@ -54,7 +45,10 @@ export function GreetingHero({
       <div className="relative z-10 flex min-w-0 flex-1 animate-rise flex-col justify-center px-5 py-6 sm:py-8 sm:pl-11 sm:pr-6">
         <div className="flex flex-wrap items-center gap-2 text-[12.5px] font-semibold">
           <span className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-line bg-white px-3">
-            <Icon size={15} strokeWidth={2} absoluteStrokeWidth className="text-[#E8A317]" /> {SKY[part].label} · {format(now, 'EEEE, d MMMM yyyy', { locale: localeId })}
+            <Icon size={15} strokeWidth={2} absoluteStrokeWidth className="text-[#E8A317]" /> {SKY[part].label} ·
+            {/* Tanggal pendek di HP supaya kedua chip muat satu baris */}
+            <span className="sm:hidden">{format(now, 'EEE, d MMM', { locale: localeId })}</span>
+            <span className="hidden sm:inline">{format(now, 'EEEE, d MMMM yyyy', { locale: localeId })}</span>
           </span>
           <span className="inline-flex h-[30px] items-center rounded-full border border-line bg-white px-3 tabular-nums">{format(now, 'HH.mm')} WIB</span>
           {birthdayIn !== null && birthdayIn > 0 && birthdayIn <= 7 && (
@@ -69,14 +63,15 @@ export function GreetingHero({
           <span className="italic">
             , <span className="text-[#4690F5]">{name}</span>
           </span>
-          {isBirthday && ' 🎂'}
+          {isBirthday ? ' 🎂' : <span className="hs-hand ml-2 inline-block text-[0.7em]" role="img" aria-label="melambai">👋</span>}
         </h1>
         <p className="mt-3 max-w-[520px] whitespace-pre-line text-[16px] leading-normal">{message}</p>
         {children}
       </div>
 
-      <div className="relative h-[200px] shrink-0 sm:h-[260px] lg:h-auto lg:w-[640px]">
-        <HeroScene className="absolute inset-0" />
+      <div className="relative h-[220px] shrink-0 sm:h-[260px] lg:h-auto lg:w-[640px]">
+        {/* HP & tablet: perbesar dan pusatkan pada ketiga karakter (rata bawah). Desktop: ilustrasi utuh seperti desain. */}
+        <HeroScene className="absolute inset-0 [--hs-fx:59.6%] [--hs-fy:100%] [--hs-top:100%] [--hs-zoom:1.3] sm:[--hs-fx:55%] sm:[--hs-zoom:1.12] lg:[--hs-fx:50%] lg:[--hs-fy:50%] lg:[--hs-top:50%] lg:[--hs-zoom:1]" />
         {/* Memudarkan tepi ilustrasi ke latar hero */}
         <div className="absolute inset-x-0 -top-px h-16 bg-gradient-to-b from-[#F1F8FF] via-[rgba(241,248,255,0.85)] via-25% to-[rgba(241,248,255,0)] lg:inset-x-auto lg:-bottom-px lg:left-0 lg:h-auto lg:w-[177px] lg:bg-gradient-to-r" />
       </div>
@@ -168,13 +163,8 @@ export function MoodCheckin({
 
   return (
     <section className="card card-pad shadow-soft">
-      <div className="flex items-center gap-3.5">
-        <IconChip icon={Smile} />
-        <div className="min-w-0 flex-1">
-          <h2 className={cardTitle}>Bagaimana perasaanmu {part} ini?</h2>
-          <p className="mt-0.5 text-[13px] leading-normal text-ink-faint">Cukup untukmu sendiri — hanya tersimpan di perangkat ini.</p>
-        </div>
-      </div>
+      <h2 className={cardTitle}>Bagaimana perasaanmu {part} ini?</h2>
+      <p className="mt-0.5 text-[13px] leading-normal text-ink-faint">Cukup untukmu sendiri — hanya tersimpan di perangkat ini.</p>
 
       <div className="mt-[18px] grid grid-cols-5 gap-1.5 sm:gap-3">
         {MOODS.map((m) => {
@@ -190,7 +180,7 @@ export function MoodCheckin({
                 on ? 'border-sky-600 bg-sky-100 shadow-[0_0_0_1px_theme(colors.sky.600)]' : 'border-line bg-white hover:-translate-y-0.5 hover:border-sky-200',
               )}
             >
-              <MoodFace mood={m.key} className={clsx('h-10 w-10 transition-transform duration-300 sm:h-12 sm:w-12', on ? 'scale-110' : 'group-hover:scale-105')} />
+              <MoodFace mood={m.key} className={clsx('h-10 w-10 transition-transform duration-300 sm:h-12 sm:w-12', on ? 'hm-pop scale-110' : 'group-hover:scale-105 group-active:scale-95')} />
               <span className={clsx('text-[12px] font-semibold leading-normal sm:text-[13px]', on ? 'text-sky-600' : 'text-ink-soft')}>{m.label}</span>
             </button>
           );
@@ -260,11 +250,8 @@ export function SelfCare({ userId, part, now, breatheSignal }: { userId: number;
   return (
     <section className="card card-pad relative overflow-hidden shadow-soft">
       <img src={windowArt} alt="" width={130} height={172} className="pointer-events-none absolute right-[23px] top-[21px] hidden sm:block" />
-      <div className="relative flex items-center gap-2.5">
-        <IconChip icon={PART_ICON[part]} size={32} />
-        <p className="text-[13px] font-semibold leading-normal text-brand">Untukmu {part} ini</p>
-      </div>
-      <h2 className="relative mt-2.5 font-brand text-[26px] font-bold leading-[1.2]">{care.title}</h2>
+      <p className="relative text-[13px] font-semibold leading-normal text-brand">Untukmu {part} ini</p>
+      <h2 className="relative mt-1 font-brand text-[24px] font-bold leading-[1.2] sm:text-[26px]">{care.title}</h2>
       <ul className="relative mt-3 w-full max-w-[380px] space-y-1.5">
         {care.tips.map((t, i) => {
           const on = done.includes(i);
@@ -279,7 +266,7 @@ export function SelfCare({ userId, part, now, breatheSignal }: { userId: number;
                 <span
                   className={clsx(
                     'grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-all',
-                    on ? 'scale-105 border-transparent bg-brand text-white' : 'border-line text-transparent',
+                    on ? 'hm-pop scale-105 border-transparent bg-brand text-white' : 'border-line text-transparent',
                   )}
                 >
                   <Check size={14} strokeWidth={3} />
@@ -328,8 +315,8 @@ function Breathing({ signal }: { signal: number }) {
   }, [step, phase]);
 
   return (
-    <div ref={ref} className="relative mt-[18px] flex items-center gap-3.5 rounded-2xl border border-sky-100 bg-sky-50 py-3.5 pl-3.5 pr-4">
-      <div className="relative grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-sky-100">
+    <div ref={ref} className="relative mt-[18px] flex items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50 py-3.5 pl-3 pr-3.5 sm:gap-3.5 sm:pl-3.5 sm:pr-4">
+      <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-100 sm:h-[52px] sm:w-[52px]">
         <span
           className="absolute inset-0 rounded-full bg-brand ease-in-out"
           style={{
@@ -344,7 +331,7 @@ function Breathing({ signal }: { signal: number }) {
         </span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-brand text-[16px] font-semibold leading-[1.3] text-brand">{phase ? phase.label : 'Latihan napas 1 menit'}</p>
+        <p className="whitespace-nowrap font-brand text-[15px] font-semibold leading-[1.3] text-brand sm:text-[16px]">{phase ? phase.label : 'Latihan napas 1 menit'}</p>
         <p className="text-[12.5px] text-ink-soft">
           {running ? `Putaran ${Math.floor(step / PHASES.length) + 1} dari ${CYCLES}` : 'Tarik 4 detik · tahan 4 · hembuskan 6'}
         </p>
@@ -393,11 +380,8 @@ export function Affirmation({ seed }: { seed: number }) {
       <Sparkle size={26} {...sparkle} className="pointer-events-none absolute right-[31px] top-[21px] text-white" />
       <Sparkle size={14} {...sparkle} className="pointer-events-none absolute right-[15px] top-[57px] text-white opacity-90" />
       <Sparkle size={12} {...sparkle} className="pointer-events-none absolute bottom-[29px] right-[83px] text-white opacity-90" />
-      <div className="relative flex items-center gap-2.5">
-        <IconChip icon={Quote} size={32} className="bg-canvas" />
-        <p className="text-[13px] font-semibold leading-normal text-ink-soft">Pesan untukmu hari ini</p>
-      </div>
-      <p className="display relative mt-3.5 text-[30px] italic leading-[1.3] text-sky-900">“{text}”</p>
+      <p className="relative text-[13px] font-semibold leading-normal text-ink-soft">Pesan untukmu hari ini</p>
+      <p className="display relative mt-2.5 text-[27px] italic leading-[1.3] text-sky-900 sm:text-[30px]">“{text}”</p>
     </section>
   );
 }
@@ -420,10 +404,7 @@ export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eli
   if (tickets.length === 0) {
     return (
       <section className="card card-pad shadow-soft">
-        <div className="flex items-center gap-3.5">
-          <IconChip icon={Route} />
-          <h2 className={cardTitle}>Pertama kali di sini? Begini caranya</h2>
-        </div>
+        <h2 className={cardTitle}>Pertama kali di sini? Begini caranya</h2>
         <ol className="mt-5 grid gap-5 sm:grid-cols-2">
           {STEPS.map(([t, d], i) => (
             <li key={t} className="flex gap-3.5">
@@ -442,20 +423,17 @@ export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eli
 
   return (
     <section className="card card-pad shadow-soft">
-      <div className="flex items-center gap-3.5">
-        <IconChip icon={Route} />
-        <div className="min-w-0 flex-1">
-          <h2 className={cardTitle}>Perjalananmu</h2>
-          {done.length > 0 && (
-            <p className="mt-0.5 text-[13px] leading-normal text-ink-soft">
-              Kamu sudah <b className="text-ink">{done.length} kali</b> berani bercerita. Itu bukan hal kecil.
-            </p>
-          )}
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className={cardTitle}>Perjalananmu</h2>
         <Link to="/pendaftaran" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-brand">
           Semua pendaftaran <ArrowRight size={14} strokeWidth={2} absoluteStrokeWidth />
         </Link>
       </div>
+      {done.length > 0 && (
+        <p className="mt-0.5 text-[13px] leading-normal text-ink-soft">
+          Kamu sudah <b className="text-ink">{done.length} kali</b> berani bercerita. Itu bukan hal kecil.
+        </p>
+      )}
 
       <div className="mt-[18px] space-y-4">
         <dl className="flex flex-col gap-4 rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4 sm:flex-row sm:items-center sm:gap-5">
@@ -470,12 +448,9 @@ export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eli
             </div>
           </div>
           <div className="hidden h-[52px] w-px shrink-0 bg-sky-200 sm:block" aria-hidden />
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <IconChip icon={Calendar} size={40} className="bg-white" />
-            <div>
-              <dt className="text-[12px] font-semibold text-ink-faint">Bersama sejak</dt>
-              <dd className="mt-0.5 font-brand text-[18px] font-bold leading-tight">{fmtDate(joinedAt, 'MMMM yyyy')}</dd>
-            </div>
+          <div className="min-w-0 flex-1">
+            <dt className="text-[12px] font-semibold text-ink-faint">Bersama sejak</dt>
+            <dd className="mt-1 font-brand text-[18px] font-bold leading-tight">{fmtDate(joinedAt, 'MMMM yyyy')}</dd>
           </div>
         </dl>
         {last && (
@@ -483,7 +458,7 @@ export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eli
             <Avatar name={last.psychologist.name} src={last.psychologist.avatarUrl} tone={last.psychologist.avatarTone} size={43} shape="rounded" />
             <div className="min-w-0 flex-1 font-semibold">
               <p className="text-[12px] text-ink-faint">Sesi terakhir · {fmtDate(last.scheduledStart, 'd MMMM yyyy')}</p>
-              <p className="truncate text-[14px] leading-normal">{fullPsychName(last.psychologist)}</p>
+              <p className="line-clamp-2 text-[14px] leading-snug">{fullPsychName(last.psychologist)}</p>
             </div>
             <ArrowRight size={16} strokeWidth={2} absoluteStrokeWidth className="shrink-0 text-ink-faint" />
           </Link>

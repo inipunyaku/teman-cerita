@@ -114,11 +114,22 @@ const LEAVES = [
   { src: leaf2, at: [-40, 260], s: 0.55, delay: 0.5, path: { '--x1': '22cqw', '--y1': '6cqh', '--x2': '48cqw', '--y2': '-2cqh', '--x3': '84cqw', '--y3': '8cqh' } },
 ] as const;
 
-/** Langit, matahari, awan, burung, gelembung chat, dan teman-teman yang menyapa — mengisi wadahnya seperti object-cover. */
+/**
+ * Langit, matahari, awan, burung, gelembung chat, dan teman-teman yang menyapa — mengisi wadahnya seperti object-cover.
+ * Bingkai bisa diatur lewat variabel CSS pada `className`: --hs-zoom (perbesaran), --hs-fx/--hs-fy (titik ilustrasi,
+ * dalam % lebar/tinggi, yang diletakkan di --hs-top dari atas wadah). Default: seluruh ilustrasi, di tengah.
+ */
 export function HeroScene({ className }: { className?: string }) {
   return (
     <div className={clsx('pointer-events-none overflow-hidden [container-type:size]', className)} aria-hidden>
-      <div className="absolute left-1/2 top-1/2 aspect-[1376/768] -translate-x-1/2 -translate-y-1/2" style={{ width: 'max(100cqw, calc(100cqh * 1376 / 768))' }}>
+      <div
+        className="absolute left-1/2 aspect-[1376/768]"
+        style={{
+          width: 'calc(max(100cqw, calc(100cqh * 1376 / 768)) * var(--hs-zoom, 1))',
+          top: 'var(--hs-top, 50%)',
+          transform: 'translate(calc(-1 * var(--hs-fx, 50%)), calc(-1 * var(--hs-fy, 50%)))',
+        }}
+      >
         <Layer src={sky} box={SCENE} />
 
         <Layer src={sunGlow} box={[1008, 38, 299, 299]} origin={SUN} className="hs-breathe" />
