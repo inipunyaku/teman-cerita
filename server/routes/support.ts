@@ -7,7 +7,15 @@ import { requireRole } from '../auth.js';
 import { publish } from '../events.js';
 import { adminIds } from '../notify.js';
 import { fail, intParam, parse } from '../util.js';
-import { ROLE_LABEL } from '../../shared/constants.js';
+import {
+  ROLE_LABEL,
+  SUPPORT_DEFAULTS,
+  SUPPORT_MINUTES_MAX,
+  SUPPORT_SESSION_GAP_MINUTES,
+  SUPPORT_TEXT_MAX,
+  fillSupportText,
+  type SupportSettings,
+} from '../../shared/constants.js';
 
 /**
  * Chat bantuan ke admin lewat tombol chat melayang. Pengguna yang sudah masuk langsung memakai akunnya;
@@ -24,6 +32,8 @@ interface ThreadRow {
   guest_pn: string | null;
   guest_token: string | null;
   last_message_at: string | null;
+  awaiting_since: string | null;
+  unavailable_sent_at: string | null;
   created_at: string;
 }
 
@@ -31,18 +41,52 @@ interface MessageRow {
   id: number;
   threadId: number;
   fromAdmin: number;
+  auto: number;
   senderName: string | null;
   body: string;
   readAt: string | null;
   createdAt: string;
 }
 
-const MESSAGE_SQL = `SELECT m.id, m.thread_id AS threadId, m.from_admin AS fromAdmin, u.name AS senderName, m.body,
+const MESSAGE_SQL = `SELECT m.id, m.thread_id AS threadId, m.from_admin AS fromAdmin, m.is_auto AS auto, u.name AS senderName, m.body,
   m.read_at AS readAt, m.created_at AS createdAt FROM support_messages m LEFT JOIN users u ON u.id = m.sender_id`;
 
-const serialize = (m: MessageRow) => ({ ...m, fromAdmin: !!m.fromAdmin });
+const serialize = (m: MessageRow) => ({ ...m, fromAdmin: !!m.fromAdmin, auto: !!m.auto });
 const listMessages = (threadId: number) =>
   (db.prepare(`${MESSAGE_SQL} WHERE m.thread_id = ? ORDER BY m.id`).all(threadId) as MessageRow[]).map(serialize);
+
+// ---------------------------------------------------------------------------
+// Pengaturan balasan otomatis
+
+export function supportSettings(): SupportSettings {
+  const row = db.prepare(`SELECT value FROM app_settings WHERE key = 'support'`).get() as { value: string } | undefined;
+  if (!row) return SUPPORT_DEFAULTS;
+  try {
+    return { ...SUPPORT_DEFAULTS, ...(JSON.parse(row.value) as Partial<SupportSettings>) };
+  } catch {
+    return SUPPORT_DEFAULTS;
+  }
+}
+
+const minutes = (label: string) =>
+  z.coerce
+    .number({ invalid_type_error: `${label} harus berupa angka.` })
+    .int(`${label} harus bilangan bulat.`)
+    .min(1, `${label} minimal 1 menit.`)
+    .max(SUPPORT_MINUTES_MAX, `${label} maksimal ${SUPPORT_MINUTES_MAX} menit (24 jam).`);
+const text = (label: string) => z.string().trim().min(1, `${label} wajib diisi.`).max(SUPPORT_TEXT_MAX, `${label} maksimal ${SUPPORT_TEXT_MAX} karakter.`);
+const settingsSchema = z
+  .object({
+    autoReply: z.boolean(),
+    responseMinutes: minutes('Perkiraan waktu respons'),
+    waitMinutes: minutes('Batas waktu tunggu'),
+    greeting: text('Pesan balasan otomatis'),
+    unavailable: text('Pesan admin tidak tersedia'),
+  })
+  .refine((d) => d.waitMinutes >= d.responseMinutes, {
+    message: 'Batas waktu tunggu tidak boleh lebih singkat dari perkiraan waktu respons.',
+    path: ['waitMinutes'],
+  });
 
 const guestLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -105,27 +149,68 @@ function threadSummary(t: ThreadRow) {
     pnMatch: match?.name ?? null,
     lastMessage: last ? serialize(last) : null,
     lastMessageAt: t.last_message_at,
+    awaitingSince: t.awaiting_since,
     unread: n,
     createdAt: t.created_at,
   };
 }
 
-function deliver(t: ThreadRow, senderId: number | null, fromAdmin: boolean, body: string) {
+const threadName = (t: ThreadRow) =>
+  t.user_id ? (db.prepare('SELECT name FROM users WHERE id = ?').get(t.user_id) as { name: string } | undefined)?.name ?? null : t.guest_name;
+
+/** Simpan pesan lalu kirim event ke semua admin dan pemilik percakapan. senderId null = tamu atau pesan otomatis. */
+function deliver(t: ThreadRow, senderId: number | null, fromAdmin: boolean, body: string, auto = false) {
   const at = now();
   const id = db
-    .prepare('INSERT INTO support_messages (thread_id, sender_id, from_admin, body, created_at) VALUES (?,?,?,?,?)')
-    .run(t.id, senderId, fromAdmin ? 1 : 0, body, at).lastInsertRowid;
+    .prepare('INSERT INTO support_messages (thread_id, sender_id, from_admin, is_auto, body, created_at) VALUES (?,?,?,?,?,?)')
+    .run(t.id, senderId, fromAdmin ? 1 : 0, auto ? 1 : 0, body, at).lastInsertRowid;
   db.prepare('UPDATE support_threads SET last_message_at = ? WHERE id = ?').run(at, t.id);
   const message = serialize(db.prepare(`${MESSAGE_SQL} WHERE m.id = ?`).get(id) as MessageRow);
-  const name = t.user_id ? (db.prepare('SELECT name FROM users WHERE id = ?').get(t.user_id) as { name: string }).name : t.guest_name;
-  const event = { threadId: t.id, message, name };
+  const event = { threadId: t.id, message, name: threadName(t) };
   publish(adminIds(), 'support', event);
   if (t.user_id) publish(t.user_id, 'support', event);
   return message;
 }
 
+/**
+ * Pesan dari pengguna memulai masa tunggu bila belum ada. Balasan "mohon tunggu" dikirim untuk pesan pertama
+ * atau pesan setelah percakapan sepi; info "admin tidak tersedia" dikirim oleh job bila masa tunggu terlewati.
+ */
+function userMessage(t: ThreadRow, senderId: number | null, body: string) {
+  const prev = db.prepare('SELECT created_at FROM support_messages WHERE thread_id = ? ORDER BY id DESC LIMIT 1').get(t.id) as
+    | { created_at: string }
+    | undefined;
+  const message = deliver(t, senderId, false, body);
+  if (!t.awaiting_since) {
+    db.prepare('UPDATE support_threads SET awaiting_since = ?, unavailable_sent_at = NULL WHERE id = ?').run(message.createdAt, t.id);
+    const s = supportSettings();
+    const quiet = !prev || Date.now() - Date.parse(prev.created_at) > SUPPORT_SESSION_GAP_MINUTES * 60e3;
+    if (s.autoReply && quiet) deliver(t, null, true, fillSupportText(s.greeting, s), true);
+  }
+  return message;
+}
+
+/** Dipanggil job berkala: beri tahu pengguna bila admin belum membalas melewati batas waktu tunggu. */
+export function notifySupportUnavailable() {
+  const s = supportSettings();
+  if (!s.autoReply) return;
+  const before = new Date(Date.now() - s.waitMinutes * 60e3).toISOString();
+  const due = db
+    .prepare('SELECT * FROM support_threads WHERE awaiting_since IS NOT NULL AND awaiting_since <= ? AND unavailable_sent_at IS NULL')
+    .all(before) as ThreadRow[];
+  for (const t of due) {
+    db.prepare('UPDATE support_threads SET unavailable_sent_at = ? WHERE id = ?').run(now(), t.id);
+    deliver(t, null, true, fillSupportText(s.unavailable, s), true);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Sisi pengguna (pekerja, psikolog, atau tamu)
+
+supportRouter.get('/info', (_req, res) => {
+  const s = supportSettings();
+  res.json({ responseMinutes: s.responseMinutes, autoReply: s.autoReply });
+});
 
 supportRouter.post('/guest', guestLimiter, (req, res) => {
   if (req.user) fail(400, 'Kamu sudah masuk — langsung kirim pesan saja.');
@@ -160,7 +245,7 @@ supportRouter.post('/me/messages', sendLimiter, (req, res) => {
   const { body } = parse(bodySchema, req.body);
   const t = ownThread(req, true);
   if (!t) fail(400, 'Isi nama dan PN dulu untuk mulai chat.', 'NO_THREAD');
-  res.status(201).json({ message: deliver(t!, req.user?.id ?? null, false, body) });
+  res.status(201).json({ message: userMessage(t!, req.user?.id ?? null, body) });
 });
 
 supportRouter.post('/me/read', (req, res) => {
@@ -177,6 +262,19 @@ supportRouter.post('/me/read', (req, res) => {
 
 const admin = Router();
 admin.use(requireRole('admin'));
+
+admin.get('/settings', (_req, res) => {
+  res.json({ settings: supportSettings(), defaults: SUPPORT_DEFAULTS });
+});
+
+admin.put('/settings', (req, res) => {
+  const d = parse(settingsSchema, req.body);
+  db.prepare(
+    `INSERT INTO app_settings (key, value, updated_by, updated_at) VALUES ('support', ?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
+  ).run(JSON.stringify(d), req.user!.id, now());
+  res.json({ settings: supportSettings() });
+});
 
 admin.get('/', (req, res) => {
   const q = String(req.query.q ?? '').trim();
@@ -204,6 +302,7 @@ admin.get('/:id', (req, res) => {
 admin.post('/:id/messages', sendLimiter, (req, res) => {
   const t = getThread(req.params.id);
   const { body } = parse(bodySchema, req.body);
+  db.prepare('UPDATE support_threads SET awaiting_since = NULL, unavailable_sent_at = NULL WHERE id = ?').run(t.id);
   res.status(201).json({ message: deliver(t, req.user!.id, true, body) });
 });
 

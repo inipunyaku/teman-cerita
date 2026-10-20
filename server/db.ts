@@ -194,7 +194,21 @@ CREATE TABLE IF NOT EXISTS support_messages (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON support_messages(thread_id, id);
+
+-- Pengaturan yang bisa diubah admin (nilai JSON per kunci).
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TEXT NOT NULL
+);
 `);
+
+// Kolom balasan otomatis chat bantuan (tabelnya sudah ada di database yang dibuat sebelum fitur ini).
+const supportThreadCols = tableCols('support_threads');
+if (!supportThreadCols.has('awaiting_since')) db.exec('ALTER TABLE support_threads ADD COLUMN awaiting_since TEXT');
+if (!supportThreadCols.has('unavailable_sent_at')) db.exec('ALTER TABLE support_threads ADD COLUMN unavailable_sent_at TEXT');
+if (!tableCols('support_messages').has('is_auto')) db.exec('ALTER TABLE support_messages ADD COLUMN is_auto INTEGER NOT NULL DEFAULT 0');
 
 // Kolom tambahan pada tabel users (profil ekspresi diri, master data pekerja, profil psikolog).
 const userCols = tableCols('users');

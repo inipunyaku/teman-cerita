@@ -2,6 +2,7 @@
 import { db, now } from './db.js';
 import { formatWhen, notify } from './notify.js';
 import { broadcastTicket, linkFor, logEvent } from './routes/tickets.js';
+import { notifySupportUnavailable } from './routes/support.js';
 import { MODE_LABEL, ROOM_PREFIX, type Mode } from '../shared/constants.js';
 
 interface Due {
@@ -77,4 +78,12 @@ export function startJobs() {
   };
   run();
   setInterval(run, 60_000).unref();
+  // Info "admin tidak tersedia" di chat bantuan dicek lebih sering supaya tepat waktu.
+  setInterval(() => {
+    try {
+      notifySupportUnavailable();
+    } catch (e) {
+      console.error('[jobs] chat bantuan', e);
+    }
+  }, 20_000).unref();
 }

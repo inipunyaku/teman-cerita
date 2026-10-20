@@ -320,3 +320,36 @@ export const ATTACHMENT_TYPES: Record<string, { mime: string; kind: AttachmentKi
 };
 export const ATTACHMENT_KIND_LABEL: Record<AttachmentKind, string> = { image: 'Foto', video: 'Video', document: 'Dokumen' };
 export const attachmentExt = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
+
+// ---------------------------------------------------------------------------
+// Chat bantuan ke admin: balasan otomatis (bisa diubah admin di menu Chat bantuan)
+
+export interface SupportSettings {
+  /** Kirim balasan otomatis & info "admin tidak tersedia". */
+  autoReply: boolean;
+  /** Perkiraan waktu admin membalas (menit), ditampilkan ke pengguna. */
+  responseMinutes: number;
+  /** Bila admin belum membalas selama ini (menit), pengguna diberi tahu admin tidak tersedia. */
+  waitMinutes: number;
+  greeting: string;
+  unavailable: string;
+}
+
+export const SUPPORT_DEFAULTS: SupportSettings = {
+  autoReply: true,
+  responseMinutes: 5,
+  waitMinutes: 10,
+  greeting:
+    'Terima kasih sudah menghubungi Admin Teman Cerita 🙏 Mohon tunggu sebentar ya, admin akan membalas dalam ±{waktu_respons} menit.',
+  unavailable:
+    'Mohon maaf, admin sedang tidak tersedia saat ini. Pesanmu sudah kami terima dan akan dibalas secepatnya begitu admin kembali. 💙',
+};
+
+export const SUPPORT_MINUTES_MAX = 1440;
+export const SUPPORT_TEXT_MAX = 500;
+/** Balasan "mohon tunggu" hanya untuk pesan pertama, atau pesan setelah percakapan sepi selama ini (menit). */
+export const SUPPORT_SESSION_GAP_MINUTES = 30;
+
+/** Ganti placeholder {waktu_respons} dan {batas_tunggu} di pesan otomatis. */
+export const fillSupportText = (text: string, s: Pick<SupportSettings, 'responseMinutes' | 'waitMinutes'>) =>
+  text.replaceAll('{waktu_respons}', String(s.responseMinutes)).replaceAll('{batas_tunggu}', String(s.waitMinutes));

@@ -246,6 +246,8 @@ export interface SupportMessage {
   id: number;
   threadId: number;
   fromAdmin: boolean;
+  /** Pesan otomatis sistem (mohon tunggu / admin tidak tersedia). */
+  auto: boolean;
   senderName: string | null;
   body: string;
   readAt: string | null;
@@ -267,6 +269,8 @@ export interface SupportThread {
   pnMatch: string | null;
   lastMessage: SupportMessage | null;
   lastMessageAt: string | null;
+  /** Sejak kapan pesan pengguna menunggu balasan admin; null bila sudah dibalas. */
+  awaitingSince: string | null;
   unread: number;
   createdAt: string;
 }

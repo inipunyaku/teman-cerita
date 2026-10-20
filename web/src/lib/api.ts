@@ -42,6 +42,7 @@ export const api = {
   get: <T>(url: string, headers?: Record<string, string>) => request<T>('GET', url, undefined, headers),
   post: <T = { ok: true }>(url: string, body: unknown = {}, headers?: Record<string, string>) => request<T>('POST', url, body, headers),
   patch: <T = { ok: true }>(url: string, body: unknown) => request<T>('PATCH', url, body),
+  put: <T = { ok: true }>(url: string, body: unknown) => request<T>('PUT', url, body),
   del: <T = { ok: true }>(url: string) => request<T>('DELETE', url),
 };
 
