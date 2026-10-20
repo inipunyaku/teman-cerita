@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import clsx from 'clsx';
-import illustration from '@/assets/auth/login-illustration.png';
+import illustrationAvif from '@/assets/auth/login-illustration.avif';
+import illustrationWebp from '@/assets/auth/login-illustration.webp';
 import glowLangit from '@/assets/auth/glow-langit.svg';
 import glowFajar from '@/assets/auth/glow-fajar.svg';
 
@@ -46,5 +47,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 }
 
 function Scene({ className }: { className?: string }) {
-  return <img src={illustration} alt="" aria-hidden className={clsx('pointer-events-none absolute inset-0 h-full w-full object-cover', className)} />;
+  // AVIF (±150 KB) untuk browser modern; WebP sebagai cadangan.
+  return (
+    <picture>
+      <source srcSet={illustrationAvif} type="image/avif" />
+      <img src={illustrationWebp} alt="" aria-hidden width={928} height={1152} className={clsx('pointer-events-none absolute inset-0 h-full w-full object-cover', className)} />
+    </picture>
+  );
 }

@@ -1,11 +1,11 @@
 """Turunkan aset merek dari web/src/assets/auth/logo-teman-cerita.png.
 
 Menghasilkan:
-  web/src/assets/brand/mark.png        karakter + gelembung (tanpa tulisan), latar transparan
-  web/src/assets/brand/logo-sm.png     logo lengkap untuk loader awal di index.html
-  web/src/assets/brand/wordmark.png    tulisan "TEMAN CERITA / BRILiaN" persis dari logo
-  web/src/assets/brand/sticker.png     bentuk stiker (isi putih + garis biru) untuk logo animasi
-  web/src/assets/brand/letters.png     sprite tiap huruf, untuk dianimasikan satu per satu
+  web/src/assets/brand/mark.webp       karakter + gelembung (tanpa tulisan), latar transparan
+  web/src/assets/brand/logo-sm.webp    logo lengkap untuk loader awal di index.html
+  web/src/assets/brand/wordmark.webp   tulisan "TEMAN CERITA / BRILiaN" persis dari logo
+  web/src/assets/brand/sticker.webp    bentuk stiker (isi putih + garis biru) untuk logo animasi
+  web/src/assets/brand/letters.webp    sprite tiap huruf, untuk dianimasikan satu per satu
   web/src/components/brand-letters.ts  posisi tiap huruf (koordinat PNG asli 1254x1254)
   web/public/favicon.*, apple-touch-icon.png, icon-192/512.png
 
@@ -48,7 +48,9 @@ def trim(img: Image.Image, pad: int) -> Image.Image:
 def small(img: Image.Image, path: Path, width: int | None = None, colors: int = 200):
     if width:
         img = img.resize((width, round(img.height * width / img.width)), Image.LANCZOS)
-    img.quantize(colors=colors, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(path, optimize=True)
+    # Palet dikunci dulu, lalu disimpan sebagai WebP lossless (piksel identik, ±10-20% lebih kecil dari PNG).
+    img = img.quantize(colors=colors, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).convert('RGBA')
+    img.save(path, lossless=True, quality=100, method=6, exact=True)
 
 
 # --- Wilayah stiker: semua yang tidak terhubung ke putih di tepi gambar -------------------
@@ -58,7 +60,7 @@ OUTSIDE = np.isin(lab, edge[edge > 0])
 INSIDE = ~OUTSIDE
 
 full = trim(soft(A, INSIDE), 8)
-small(full, BRAND / 'logo-sm.png', 440)
+small(full, BRAND / 'logo-sm.webp', 440)
 
 # Stiker polos: garis biru di tepi dipertahankan, isinya putih. Disimpan setengah ukuran.
 dist = ndi.distance_transform_edt(INSIDE)
@@ -68,7 +70,7 @@ y0, y1 = np.where(INSIDE.any(axis=1))[0][[0, -1]]
 x0, x1 = np.where(INSIDE.any(axis=0))[0][[0, -1]]
 sticker = soft(stk, INSIDE).crop((x0 - 2, y0 - 2, x1 + 3, y1 + 3))
 STICKER_BOX = (int(x0 - 2), int(y0 - 2), sticker.width, sticker.height)
-small(sticker, BRAND / 'sticker.png', sticker.width // 2, colors=32)
+small(sticker, BRAND / 'sticker.webp', sticker.width // 2, colors=32)
 
 # --- Mark: gelembung + tiga karakter --------------------------------------------------------
 my0, my1, mx0, mx1 = 200, 745, 215, 1055
@@ -84,7 +86,7 @@ for i, sl in enumerate(ndi.find_objects(lab), start=1):
         continue  # bintik, garis tepi stiker
     keep[sl] |= comp
 mark = trim(soft(c, ndi.binary_fill_holes(keep)), 6)
-small(mark, BRAND / 'mark.png', 420)
+small(mark, BRAND / 'mark.webp', 420)
 
 # --- Huruf ----------------------------------------------------------------------------------
 # Komponen tinta di bawah karakter, tanpa garis tepi stiker (tipis & panjang).
@@ -147,13 +149,13 @@ for s in sprites:
     sheet.alpha_composite(s, (x, pad))
     sheet_pos.append((x, pad, s.width, s.height))
     x += s.width + pad
-small(sheet, BRAND / 'letters.png', colors=160)
+small(sheet, BRAND / 'letters.webp', colors=160)
 
 # Wordmark: seluruh tulisan, tanpa stiker.
 allm = np.zeros_like(text)
 for ch, lx0, lx1, ly0, ly1, row in letters:
     allm |= letter_mask(lx0, lx1, ly0, ly1, row)
-small(trim(soft(A, allm), 2), BRAND / 'wordmark.png', 360)
+small(trim(soft(A, allm), 2), BRAND / 'wordmark.webp', 360)
 
 # --- Metadata TypeScript --------------------------------------------------------------------
 rows = ',\n'.join(
@@ -162,7 +164,7 @@ rows = ',\n'.join(
 )
 (ROOT / 'web/src/components/brand-letters.ts').write_text(
     '// Dibuat oleh scripts/brand-assets.py — jangan diedit manual.\n'
-    '// x/y/w/h: posisi huruf di PNG logo asli (1254×1254); sx/sy/sw/sh: posisinya di letters.png.\n'
+    '// x/y/w/h: posisi huruf di PNG logo asli (1254×1254); sx/sy/sw/sh: posisinya di letters.webp.\n'
     f'export const SHEET = {{ w: {sheet.width}, h: {sheet.height} }};\n'
     f'export const STICKER = {{ x: {STICKER_BOX[0]}, y: {STICKER_BOX[1]}, w: {STICKER_BOX[2]}, h: {STICKER_BOX[3]} }};\n'
     'export const LETTERS = [\n' + rows + ',\n] as const;\n',

@@ -1,7 +1,8 @@
+import { Suspense } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import clsx from 'clsx';
 import { Calendar, ClipboardList, House, UserRound } from 'lucide-react';
-import { Logo } from '@/components/ui';
+import { Logo, PageLoading } from '@/components/ui';
 import { NotificationBell } from '@/components/NotificationBell';
 import { UserMenu } from './UserMenu';
 
@@ -45,7 +46,9 @@ export function EmployeeLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
-        <Outlet />
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
       </main>
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur-md sm:hidden">
         <div className="grid grid-cols-4">

@@ -1,9 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import clsx from 'clsx';
-import markSrc from '@/assets/brand/mark.png';
-import wordmarkSrc from '@/assets/brand/wordmark.png';
-import lettersSrc from '@/assets/brand/letters.png';
-import stickerSrc from '@/assets/brand/sticker.png';
+import markSrc from '@/assets/brand/mark.webp';
+import wordmarkSrc from '@/assets/brand/wordmark.webp';
+import lettersSrc from '@/assets/brand/letters.webp';
+import stickerSrc from '@/assets/brand/sticker.webp';
 import { LETTERS, SHEET, STICKER } from './brand-letters';
 
 /** Warna yang diambil langsung dari logo-teman-cerita.png. */

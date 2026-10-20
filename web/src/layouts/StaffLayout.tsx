@@ -1,8 +1,8 @@
-import { useEffect, useState, type ComponentType } from 'react';
+import { Suspense, useEffect, useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { Menu, X, type LucideProps } from 'lucide-react';
-import { Logo } from '@/components/ui';
+import { Logo, PageLoading } from '@/components/ui';
 import { NotificationBell } from '@/components/NotificationBell';
 import { UserMenu } from './UserMenu';
 
@@ -77,7 +77,9 @@ export function StaffLayout({ nav, profilePath, label }: { nav: NavItem[]; profi
         <NotificationBell />
       </header>
       <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <Outlet />
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

@@ -1,5 +1,5 @@
 // Dibuat oleh scripts/brand-assets.py — jangan diedit manual.
-// x/y/w/h: posisi huruf di PNG logo asli (1254×1254); sx/sy/sw/sh: posisinya di letters.png.
+// x/y/w/h: posisi huruf di PNG logo asli (1254×1254); sx/sy/sw/sh: posisinya di letters.webp.
 export const SHEET = { w: 1429, h: 168 };
 export const STICKER = { x: 101, y: 185, w: 1086, h: 949 };
 export const LETTERS = [

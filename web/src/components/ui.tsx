@@ -180,6 +180,15 @@ export function Spinner({ className }: { className?: string }) {
   return <Loader2 className={clsx('animate-spin', className)} size={18} />;
 }
 
+/** Penanda singkat saat kode halaman sedang diunduh (halaman dimuat terpisah). */
+export function PageLoading() {
+  return (
+    <div className="grid min-h-[50vh] place-items-center" role="status" aria-label="Memuat halaman">
+      <Spinner className="text-sky-600" />
+    </div>
+  );
+}
+
 /** Blok skeleton dengan kilau halus; dipakai untuk menyusun kerangka tiap halaman. */
 export function Sk({ className, style }: { className?: string; style?: React.CSSProperties }) {
   // Sudut default hanya bila pemanggil tidak menentukan sendiri (mis. rounded-full untuk avatar).

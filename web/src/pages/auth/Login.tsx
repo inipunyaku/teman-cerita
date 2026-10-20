@@ -8,7 +8,7 @@ import type { User } from '@/lib/types';
 import { Field, Spinner } from '@/components/ui';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useWelcomeSplash } from '@/components/WelcomeSplash';
-import logo from '@/assets/auth/logo-brilian.png';
+import logo from '@/assets/auth/logo-brilian.webp';
 
 const DEMO = [
   { label: 'Pekerja', id: '90001234' },

@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, CalendarRange, ChartNoAxesColumn, Building2, Headset, LayoutGrid, Stethoscope, Users } from 'lucide-react';
@@ -12,24 +12,50 @@ import { SupportWidget } from './components/support/SupportWidget';
 import { EmployeeLayout } from './layouts/EmployeeLayout';
 import { StaffLayout } from './layouts/StaffLayout';
 import Login from './pages/auth/Login';
-import Home from './pages/employee/Home';
-import Booking from './pages/employee/Booking';
-import Registrations from './pages/employee/Registrations';
-import RegistrationDetail from './pages/employee/RegistrationDetail';
-import Availability from './pages/common/Availability';
-import Profile from './pages/common/Profile';
-import NotFound from './pages/common/NotFound';
-import PsychDashboard from './pages/psych/Dashboard';
-import Sessions from './pages/psych/Sessions';
-import SessionDetail from './pages/psych/SessionDetail';
-import AdminTickets from './pages/admin/Tickets';
-import AdminTicketDetail from './pages/admin/TicketDetail';
-import Employees from './pages/admin/Employees';
-import Staff from './pages/admin/Staff';
-import Units from './pages/admin/Units';
-import AdminSupport from './pages/admin/Support';
 
-const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+// Halaman dimuat saat dibuka supaya unduhan awal kecil; halaman milik peran yang login diunduh diam-diam setelahnya.
+const pages = {
+  Home: () => import('./pages/employee/Home'),
+  Booking: () => import('./pages/employee/Booking'),
+  Registrations: () => import('./pages/employee/Registrations'),
+  RegistrationDetail: () => import('./pages/employee/RegistrationDetail'),
+  Availability: () => import('./pages/common/Availability'),
+  Profile: () => import('./pages/common/Profile'),
+  NotFound: () => import('./pages/common/NotFound'),
+  PsychDashboard: () => import('./pages/psych/Dashboard'),
+  Sessions: () => import('./pages/psych/Sessions'),
+  SessionDetail: () => import('./pages/psych/SessionDetail'),
+  AdminTickets: () => import('./pages/admin/Tickets'),
+  AdminTicketDetail: () => import('./pages/admin/TicketDetail'),
+  Employees: () => import('./pages/admin/Employees'),
+  Staff: () => import('./pages/admin/Staff'),
+  Units: () => import('./pages/admin/Units'),
+  AdminSupport: () => import('./pages/admin/Support'),
+  AdminDashboard: () => import('./pages/admin/Dashboard'),
+};
+const Home = lazy(pages.Home);
+const Booking = lazy(pages.Booking);
+const Registrations = lazy(pages.Registrations);
+const RegistrationDetail = lazy(pages.RegistrationDetail);
+const Availability = lazy(pages.Availability);
+const Profile = lazy(pages.Profile);
+const NotFound = lazy(pages.NotFound);
+const PsychDashboard = lazy(pages.PsychDashboard);
+const Sessions = lazy(pages.Sessions);
+const SessionDetail = lazy(pages.SessionDetail);
+const AdminTickets = lazy(pages.AdminTickets);
+const AdminTicketDetail = lazy(pages.AdminTicketDetail);
+const Employees = lazy(pages.Employees);
+const Staff = lazy(pages.Staff);
+const Units = lazy(pages.Units);
+const AdminSupport = lazy(pages.AdminSupport);
+const AdminDashboard = lazy(pages.AdminDashboard);
+
+const PRELOAD: Record<string, (keyof typeof pages)[]> = {
+  employee: ['Home', 'Booking', 'Registrations', 'RegistrationDetail', 'Profile'],
+  psychologist: ['PsychDashboard', 'Sessions', 'SessionDetail', 'Availability', 'Profile'],
+  admin: ['AdminDashboard', 'AdminTickets', 'AdminTicketDetail', 'Availability', 'Employees', 'Staff', 'Units', 'AdminSupport', 'Profile'],
+};
 
 function Guard({ role, children }: { role: Role; children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -91,6 +117,12 @@ function PsychShell() {
 
 export default function App() {
   useRealtime();
+  const { user } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    const t = window.setTimeout(() => PRELOAD[user.role]?.forEach((k) => void pages[k]().catch(() => {})), 2000);
+    return () => window.clearTimeout(t);
+  }, [user?.role]);
   return (
     <Suspense fallback={<BrandLoader />}>
       <Routes>
