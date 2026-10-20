@@ -1,123 +1,50 @@
 import type { ReactNode } from 'react';
 import clsx from 'clsx';
-import { Clouds, Logo } from '@/components/ui';
 import illustration from '@/assets/auth/login-illustration.png';
 import glowLangit from '@/assets/auth/glow-langit.svg';
 import glowFajar from '@/assets/auth/glow-fajar.svg';
 
-type Variant = 'default' | 'dreamy';
-
-export function AuthLayout({ children, variant = 'default' }: { children: ReactNode; variant?: Variant }) {
-  const dreamy = variant === 'dreamy';
+/** Mengikuti frame Figma "Login — Desktop (1440) — Dreamy Redesign". */
+export function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
-      {dreamy ? <DreamyAside /> : <DefaultAside />}
-      {dreamy && <DreamyHeader />}
-      <main
-        className={clsx(
-          'relative flex flex-col overflow-hidden px-4 py-8 sm:px-10 lg:justify-center lg:px-16',
-          // Di HP formulir menjadi "sheet" yang sedikit menimpa ilustrasi.
-          dreamy && '-mt-7 rounded-t-[28px] bg-canvas pt-9 sm:pt-12 lg:mt-0 lg:rounded-none lg:pt-8',
-        )}
-      >
-        {dreamy && (
-          <>
-            {/* Glow — langit (kanan atas) & fajar (kiri bawah); blur 45px sudah ada di SVG. */}
-            <img src={glowLangit} alt="" width={600} height={600} className="pointer-events-none absolute -right-[250px] -top-[230px] max-w-none" />
-            <img src={glowFajar} alt="" width={540} height={540} className="pointer-events-none absolute -bottom-[190px] -left-[210px] max-w-none" />
-          </>
-        )}
-        {!dreamy && (
-          <div className="relative mb-10 lg:hidden">
-            <Logo />
-          </div>
-        )}
-        <div className="relative mx-auto w-full max-w-[420px]">{children}</div>
+    <div className="grid min-h-dvh lg:grid-cols-[740fr_700fr]">
+      <aside className="relative hidden overflow-hidden lg:block lg:p-12">
+        <Scene />
+        {/* Selubung putih agar judul tetap terbaca di atas ilustrasi */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[460px] bg-gradient-to-b from-white/55 to-white/0" />
+        <div className="relative -ml-3 mt-[89px] max-w-[448px]">
+          <p className="display text-[56px] text-sky-900">
+            Nggak semua hal
+            <br />
+            harus kamu
+            <br />
+            <span className="italic text-sky-600">pikul sendiri.</span>
+          </p>
+          <p className="mt-6 text-[15px] leading-[1.62] text-ink-soft">
+            Perasaanmu berarti. Ceritamu berharga.
+            <br />
+            Mulai langkah kecil untuk memahami dirimu bersama psikolog profesional teman cerita.
+          </p>
+        </div>
+      </aside>
+
+      {/* Pengganti panel ilustrasi di layar kecil; formulir menimpanya seperti "sheet". */}
+      <header className="relative h-[250px] overflow-hidden sm:h-[340px] lg:hidden">
+        <Scene className="object-[center_70%]" />
+      </header>
+
+      <main className="relative -mt-7 flex flex-col items-center overflow-hidden rounded-t-[28px] bg-canvas px-4 pb-8 pt-9 sm:px-10 sm:pt-12 lg:mt-0 lg:justify-center lg:rounded-none lg:px-16 lg:py-8">
+        {/* Glow — langit (kanan atas) & fajar (kiri bawah); blur 45px sudah ada di SVG. */}
+        <img src={glowLangit} alt="" width={600} height={600} className="pointer-events-none absolute -right-[250px] -top-[230px] max-w-none" />
+        <img src={glowFajar} alt="" width={540} height={540} className="pointer-events-none absolute -bottom-[190px] -left-[210px] max-w-none" />
+        <div className="relative w-full max-w-[500px] rounded-[32px] border border-white/90 bg-white/50 p-6 backdrop-blur-[14px] sm:p-10">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
 
-/** Ilustrasi langit + awan yang bergerak pelan. */
-function DreamyScene({ className }: { className?: string }) {
-  return (
-    <div className={clsx('pointer-events-none absolute inset-0 overflow-hidden', className)} aria-hidden>
-      <img src={illustration} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      {/* Awan tipis melintas di langit; delay negatif supaya sudah tersebar saat halaman dibuka. */}
-      <div className="absolute inset-x-0 top-[24%] animate-cloudPass [animation-duration:70s] [animation-delay:-20s]">
-        <Clouds className="w-[200px] opacity-70" />
-      </div>
-      <div className="absolute inset-x-0 top-[40%] animate-cloudPass [animation-duration:95s] [animation-delay:-70s]">
-        <Clouds className="w-[130px] opacity-60" />
-      </div>
-      <div className="absolute inset-x-0 top-[9%] animate-cloudPass [animation-duration:120s] [animation-delay:-45s]">
-        <Clouds className="w-[160px] opacity-40" />
-      </div>
-      {/* Awan depan bergoyang di tepi bawah */}
-      <Clouds className="absolute -bottom-[7%] -left-16 w-[58%] min-w-[260px] animate-sway opacity-90" />
-      <Clouds className="absolute -bottom-[9%] -right-20 w-[52%] min-w-[240px] animate-sway opacity-80 [animation-delay:-9s] [animation-direction:reverse]" />
-      {/* Veil agar judul tetap terbaca di atas ilustrasi */}
-      <div className="absolute inset-x-0 top-0 h-[51%] bg-gradient-to-b from-white/55 to-white/0" />
-    </div>
-  );
-}
-
-function DreamyAside() {
-  return (
-    <aside className="relative hidden overflow-hidden lg:flex lg:flex-col lg:p-12">
-      <DreamyScene />
-      <Logo size="lg" className="relative" />
-      <div className="relative -ml-3 mt-[43px] max-w-[448px]">
-        <p className="display text-[56px] tracking-[-0.01em] text-sky-900">
-          Nggak semua hal
-          <br />
-          harus kamu <span className="italic text-sky-600">pikul sendiri.</span>
-        </p>
-        <p className="mt-6 max-w-[384px] text-[15px] leading-[1.62] text-ink-soft">
-          Perasaanmu berarti. Ceritamu berharga.
-          <br />
-          Mulai langkah kecil untuk memahami dirimu bersama psikolog profesional.
-        </p>
-      </div>
-    </aside>
-  );
-}
-
-/** Pengganti panel ilustrasi di layar kecil. */
-function DreamyHeader() {
-  return (
-    <header className="relative h-[250px] overflow-hidden sm:h-[340px] lg:hidden">
-      <DreamyScene className="[&>img]:object-[center_70%]" />
-      <div className="relative px-4 pt-6 sm:px-10">
-        <Logo />
-      </div>
-    </header>
-  );
-}
-
-function DefaultAside() {
-  return (
-    <aside className="grain relative hidden overflow-hidden bg-gradient-to-b from-sky-100 via-sky-50 to-haze lg:flex lg:flex-col lg:justify-between lg:p-12">
-      <Logo size="lg" />
-      <div className="relative z-10 max-w-md">
-        <p className="display text-[56px] text-sky-900">
-          Nggak semua hal
-          <br />
-          harus kamu <span className="italic text-sky-600">pikul sendiri.</span>
-        </p>
-        <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-ink-soft">
-          Teman Cerita menghubungkanmu dengan psikolog lewat chat, online meeting, atau tatap muka. Ceritamu hanya dibaca
-          psikolog yang mendampingimu.
-        </p>
-      </div>
-      <div className="relative z-10 flex items-center gap-6 text-[13px] text-ink-soft">
-        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-mint-500" /> Rahasia</span>
-        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-sky-500" /> Psikolog berlisensi</span>
-        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-sun-500" /> Tanpa biaya</span>
-      </div>
-      <Clouds className="pointer-events-none absolute -right-24 bottom-16 w-[620px] animate-drift opacity-90" />
-      <Clouds className="pointer-events-none absolute -left-40 top-24 w-[420px] opacity-60 [animation-delay:-6s] animate-drift" />
-      <div className="pointer-events-none absolute right-20 top-20 h-28 w-28 rounded-full bg-sun-100/70 blur-2xl" />
-    </aside>
-  );
+function Scene({ className }: { className?: string }) {
+  return <img src={illustration} alt="" aria-hidden className={clsx('pointer-events-none absolute inset-0 h-full w-full object-cover', className)} />;
 }

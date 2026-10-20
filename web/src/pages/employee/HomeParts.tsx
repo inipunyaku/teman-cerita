@@ -3,192 +3,84 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { format, subDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { ArrowRight, Cake, Check, Moon, Pause, Play, Quote, Sun, Sunrise, Sunset, Wind } from 'lucide-react';
-import { AnimatedLogo } from '@/components/Brand';
-import { Clouds } from '@/components/ui';
+import { ArrowRight, Cake, Calendar, Check, Heart, Moon, Pause, Play, Quote, Route, Smile, Sparkle, Sun, Sunrise, Sunset, Wind, type LucideIcon } from 'lucide-react';
+import { Avatar } from '@/components/ui';
 import { fmtDate, fullPsychName, ymd } from '@/lib/format';
 import { SKY, type Accent, type DayPart, useLocal } from '@/lib/personal';
 import type { Eligibility, Ticket } from '@/lib/types';
+import heroArt from '@/assets/home/hero-3d.png';
+import windowArt from '@/assets/home/window.svg';
+import cloudArt from '@/assets/home/cloud.svg';
 
 const PART_ICON = { pagi: Sunrise, siang: Sun, sore: Sunset, malam: Moon } as const;
 
-// ---------------------------------------------------------------------------
-// Hero langit — berubah mengikuti pagi / siang / sore / malam
+/** Lencana ikon bulat di kepala kartu (komponen Figma "Icon Chip"). */
+export function IconChip({ icon: Icon, size = 44, className }: { icon: LucideIcon; size?: 44 | 40 | 32; className?: string }) {
+  return (
+    <span className={clsx('grid shrink-0 place-items-center rounded-full bg-sky-50 text-brand', className)} style={{ width: size, height: size }}>
+      <Icon size={size === 32 ? 16 : 20} strokeWidth={2} absoluteStrokeWidth />
+    </span>
+  );
+}
 
-export function SkyHero({
+const cardTitle = 'font-brand text-[19px] font-semibold leading-[1.3]';
+
+// ---------------------------------------------------------------------------
+// Hero sapaan — teks di kiri, ilustrasi teman-teman di kanan
+
+export function GreetingHero({
   part,
   now,
-  accent,
   greeting,
   name,
   message,
-  note,
   birthdayIn,
   children,
 }: {
   part: DayPart;
   now: Date;
-  accent: Accent;
   greeting: string;
   name: string;
-  message: ReactNode;
-  note: string;
+  message: string;
   birthdayIn: number | null;
   children?: ReactNode;
 }) {
-  const sky = SKY[part];
   const Icon = PART_ICON[part];
   const isBirthday = birthdayIn === 0;
   return (
-    <section
-      className="relative -mx-4 overflow-hidden px-5 pb-[150px] pt-6 sm:mx-0 sm:rounded-4xl sm:px-10 sm:pb-12 sm:pt-9 lg:min-h-[360px]"
-      style={{ background: sky.sky, color: sky.ink }}
-    >
-      <SkyScene part={part} />
+    <section className="relative flex flex-col overflow-hidden rounded-[28px] border border-line bg-gradient-to-r from-white to-[#E4F1FE] shadow-[0_12px_32px_-16px_rgba(15,92,138,0.1)] lg:min-h-[300px] lg:flex-row">
       {isBirthday && <Confetti />}
 
-      <div className="relative z-10 max-w-xl animate-rise">
+      <div className="relative z-10 flex min-w-0 flex-1 animate-rise flex-col justify-center px-5 py-6 sm:py-8 sm:pl-11 sm:pr-6">
         <div className="flex flex-wrap items-center gap-2 text-[12.5px] font-semibold">
-          <span className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 backdrop-blur-sm" style={{ background: sky.glass }}>
-            <Icon size={15} strokeWidth={2} /> {sky.label} · {format(now, 'EEEE, d MMMM', { locale: localeId })}
+          <span className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-line bg-white px-3">
+            <Icon size={15} strokeWidth={2} absoluteStrokeWidth className="text-[#E8A317]" /> {SKY[part].label} · {format(now, 'EEEE, d MMMM yyyy', { locale: localeId })}
           </span>
-          <span className="inline-flex h-8 items-center rounded-full px-3 tabular-nums backdrop-blur-sm" style={{ background: sky.glass }}>
-            {format(now, 'HH.mm')} WIB
-          </span>
+          <span className="inline-flex h-[30px] items-center rounded-full border border-line bg-white px-3 tabular-nums">{format(now, 'HH.mm')} WIB</span>
           {birthdayIn !== null && birthdayIn > 0 && birthdayIn <= 7 && (
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-white" style={{ background: accent.acc }}>
+            <span className="inline-flex h-[30px] items-center gap-1.5 rounded-full bg-brand px-3 text-white">
               <Cake size={14} /> {birthdayIn === 1 ? 'Besok ulang tahunmu!' : `${birthdayIn} hari lagi ulang tahunmu`}
             </span>
           )}
         </div>
 
-        <p className="mt-6 text-[16px] font-medium" style={{ color: sky.soft }}>
-          {isBirthday ? 'Selamat ulang tahun,' : `${greeting},`}
-        </p>
-        <h1
-          className={clsx('mt-0.5 break-words text-[54px] leading-[0.98] sm:text-[72px]', accent.nameFont)}
-          style={{ color: sky.night ? '#FFFFFF' : accent.ink }}
-        >
-          {name}
-          {isBirthday ? ' 🎂' : '.'}
+        <h1 className="mt-[26px] break-words font-display text-[38px] leading-[0.98] tracking-[-0.01em] sm:text-[48px]">
+          {isBirthday ? 'Selamat ulang tahun' : greeting}
+          <span className="italic">
+            , <span className="text-[#4690F5]">{name}</span>
+          </span>
+          {isBirthday && ' 🎂'}
         </h1>
-        <p className="mt-4 max-w-md text-[16px] leading-relaxed" style={{ color: sky.ink }}>
-          {message}
-        </p>
-        <p className="mt-1.5 max-w-md text-[13.5px] leading-relaxed" style={{ color: sky.soft }}>
-          {note}
-        </p>
+        <p className="mt-3 max-w-[520px] whitespace-pre-line text-[16px] leading-normal">{message}</p>
         {children}
       </div>
 
-      {/* Teman-teman dari logo mengintip di tepi bawah — tidur saat malam */}
-      <div className="pointer-events-none absolute bottom-0 right-1/2 w-[230px] translate-x-1/2 sm:right-8 sm:w-[300px] sm:translate-x-0 lg:right-14 lg:w-[360px]">
-        <AnimatedLogo variant="peek" sleepy={sky.night} title={sky.night ? 'Teman Cerita sedang tidur' : 'Teman Cerita menyapamu'} className="w-full" />
+      <div className="relative h-[200px] shrink-0 sm:h-[260px] lg:h-auto lg:w-[640px]">
+        <img src={heroArt} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        {/* Memudarkan tepi ilustrasi ke latar hero */}
+        <div className="absolute inset-x-0 -top-px h-16 bg-gradient-to-b from-[#F1F8FF] via-[rgba(241,248,255,0.85)] via-25% to-[rgba(241,248,255,0)] lg:inset-x-auto lg:-bottom-px lg:left-0 lg:h-auto lg:w-[177px] lg:bg-gradient-to-r" />
       </div>
     </section>
-  );
-}
-
-function SkyScene({ part }: { part: DayPart }) {
-  return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      {part === 'pagi' && (
-        <>
-          <Sunball className="right-[10%] top-[30%] h-20 w-20 sm:right-[34%] sm:top-[38%] sm:h-24 sm:w-24" core="#FFE9A8" edge="#FFAA55" glow="rgba(255,190,120,.55)" rise />
-          <Birds />
-          <Clouds className="absolute -left-24 top-[46%] w-[300px] animate-drift opacity-70" />
-          <Clouds className="absolute -right-24 top-4 w-[360px] animate-drift opacity-80 [animation-delay:-7s]" />
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white/50 to-transparent" />
-        </>
-      )}
-      {part === 'siang' && (
-        <>
-          <Sunball className="right-[8%] top-[8%] h-20 w-20 sm:right-[12%] sm:top-[12%] sm:h-24 sm:w-24" core="#FFF6C2" edge="#FFC72C" glow="rgba(255,230,120,.75)" rays />
-          <Clouds className="absolute -right-20 top-[30%] w-[380px] animate-drift opacity-95" />
-          <Clouds className="absolute -left-32 top-[8%] w-[320px] animate-drift opacity-80 [animation-delay:-5s]" />
-          <div className="absolute inset-x-0 top-[18%] animate-cloudPass [animation-duration:80s] [animation-delay:-30s]">
-            <Clouds className="w-[180px] opacity-80" />
-          </div>
-        </>
-      )}
-      {part === 'sore' && (
-        <>
-          <Sunball className="bottom-[60px] right-[8%] h-32 w-32 sm:bottom-[40px] sm:right-[36%] sm:h-40 sm:w-40" core="#FFD58A" edge="#FF7E4F" glow="rgba(255,140,90,.55)" />
-          <svg viewBox="0 0 800 120" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[90px] w-full sm:h-[110px]">
-            <path d="M0 70C120 30 220 40 330 70S560 30 800 60V120H0Z" fill="#F4A98C" opacity=".55" />
-            <path d="M0 95C150 65 260 80 400 95S640 70 800 88V120H0Z" fill="#EE9384" opacity=".55" />
-          </svg>
-          <Clouds className="absolute -left-20 top-6 w-[340px] animate-drift opacity-50" />
-        </>
-      )}
-      {part === 'malam' && (
-        <>
-          <Stars />
-          <div className="absolute right-[10%] top-[10%] sm:right-[14%] sm:top-[14%]">
-            <div className="hm-glow absolute -inset-10 rounded-full bg-[#FFF1C4]/25 blur-2xl" />
-            <svg viewBox="0 0 64 64" className="relative h-16 w-16 sm:h-20 sm:w-20">
-              <path d="M44 6a28 28 0 1 0 14 40A24 24 0 0 1 44 6z" fill="#FFF1C4" />
-              <circle cx="24" cy="30" r="3" fill="#F2DE9C" />
-              <circle cx="32" cy="46" r="2" fill="#F2DE9C" />
-            </svg>
-          </div>
-          <Clouds className="absolute -left-24 top-[40%] w-[320px] animate-drift opacity-[.12]" />
-        </>
-      )}
-    </div>
-  );
-}
-
-function Sunball({ className, core, edge, glow, rays, rise }: { className: string; core: string; edge: string; glow: string; rays?: boolean; rise?: boolean }) {
-  return (
-    <div className={clsx('absolute', rise && 'hm-sunrise', className)}>
-      <div className="hm-glow absolute -inset-[70%] rounded-full blur-2xl" style={{ background: glow }} />
-      {rays && (
-        <svg viewBox="0 0 100 100" className="hm-spin absolute -inset-[45%] h-[190%] w-[190%] opacity-60">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <rect key={i} x="48.5" y="2" width="3" height="14" rx="1.5" fill={edge} transform={`rotate(${i * 30} 50 50)`} />
-          ))}
-        </svg>
-      )}
-      <div className="relative h-full w-full rounded-full" style={{ background: `radial-gradient(circle at 38% 35%, ${core} 0%, ${edge} 100%)` }} />
-    </div>
-  );
-}
-
-function Birds() {
-  return (
-    <div className="absolute inset-x-0 top-[18%] animate-cloudPass [animation-duration:45s] [animation-delay:-12s]">
-      <svg viewBox="0 0 60 24" className="w-14 text-[#8A5A3A]/60">
-        {[
-          [4, 14, 1],
-          [22, 6, 0.8],
-          [40, 16, 0.7],
-        ].map(([x, y, s], i) => (
-          <path key={i} d={`M${x} ${y}q${4 * s} ${-5 * s} ${8 * s} 0q${4 * s} ${-5 * s} ${8 * s} 0`} stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-// Posisi bintang tetap (bukan acak) supaya tidak berpindah tiap render.
-const STARS = Array.from({ length: 26 }, (_, i) => ({
-  left: (i * 37 + 11) % 100,
-  top: (i * 53 + 7) % 72,
-  size: 2 + (i % 3),
-  delay: (i % 7) * 0.35,
-}));
-function Stars() {
-  return (
-    <>
-      {STARS.map((s, i) => (
-        <span
-          key={i}
-          className="tc-twinkle absolute rounded-full bg-white"
-          style={{ left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size, animationDelay: `${s.delay}s`, animationDuration: `${2 + (i % 4) * 0.6}s` }}
-        />
-      ))}
-    </>
   );
 }
 
@@ -275,15 +167,16 @@ export function MoodCheckin({
   };
 
   return (
-    <section className="card card-pad">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-brand text-[19px] font-semibold">Bagaimana perasaanmu {part} ini?</h2>
-          <p className="mt-0.5 text-[13px] text-ink-faint">Cukup untukmu sendiri — hanya tersimpan di perangkat ini.</p>
+    <section className="card card-pad shadow-soft">
+      <div className="flex items-center gap-3.5">
+        <IconChip icon={Smile} />
+        <div className="min-w-0 flex-1">
+          <h2 className={cardTitle}>Bagaimana perasaanmu {part} ini?</h2>
+          <p className="mt-0.5 text-[13px] leading-normal text-ink-faint">Cukup untukmu sendiri — hanya tersimpan di perangkat ini.</p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-5 gap-1.5 sm:gap-2.5">
+      <div className="mt-[18px] grid grid-cols-5 gap-1.5 sm:gap-3">
         {MOODS.map((m) => {
           const on = m.key === mood;
           return (
@@ -294,54 +187,55 @@ export function MoodCheckin({
               aria-pressed={on}
               className={clsx(
                 'group flex flex-col items-center gap-1.5 rounded-2xl border px-1 py-2.5 transition-all duration-200',
-                on ? 'border-transparent shadow-soft' : 'border-line hover:-translate-y-0.5 hover:border-[var(--acc-ring)]',
+                on ? 'border-sky-600 bg-sky-100 shadow-[0_0_0_1px_theme(colors.sky.600)]' : 'border-line bg-white hover:-translate-y-0.5 hover:border-sky-200',
               )}
-              style={on ? { background: accent.soft, boxShadow: `0 0 0 2px ${accent.acc}` } : undefined}
             >
               <MoodFace mood={m.key} className={clsx('h-10 w-10 transition-transform duration-300 sm:h-12 sm:w-12', on ? 'scale-110' : 'group-hover:scale-105')} />
-              <span className={clsx('text-[12px] font-semibold sm:text-[13px]', on ? 'text-[var(--acc-ink)]' : 'text-ink-soft')}>{m.label}</span>
+              <span className={clsx('text-[12px] font-semibold leading-normal sm:text-[13px]', on ? 'text-sky-600' : 'text-ink-soft')}>{m.label}</span>
             </button>
           );
         })}
       </div>
 
       {picked && (
-        <div key={picked.key} className="mt-4 animate-rise rounded-2xl px-4 py-3.5 text-[14px] leading-relaxed" style={{ background: accent.soft, color: accent.ink }}>
-          {picked.reply}
-          {picked.key === 'lelah' && (
-            <button type="button" onClick={onBreathe} className="mt-2.5 flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
-              <Wind size={15} /> Coba latihan napas 1 menit
-            </button>
-          )}
-          {picked.key === 'sedih' &&
-            (hasActive ? (
-              <p className="mt-1.5 font-semibold">Ceritakan juga perasaan ini di sesi konselingmu nanti, ya.</p>
-            ) : canBook ? (
-              <Link to="/buat-janji" className="mt-2.5 flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
-                Buat janji dengan psikolog <ArrowRight size={15} />
-              </Link>
-            ) : null)}
+        <div key={picked.key} className="mt-3 flex animate-rise items-start gap-2.5 rounded-xl border border-line px-4 py-3 text-[13.5px] leading-normal">
+          <Heart size={16} strokeWidth={2} absoluteStrokeWidth color={accent.acc} fill={accent.acc} className="mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            {picked.reply}
+            {picked.key === 'lelah' && (
+              <button type="button" onClick={onBreathe} className="mt-2 flex items-center gap-1.5 font-semibold text-brand underline-offset-4 hover:underline">
+                <Wind size={15} /> Coba latihan napas 1 menit
+              </button>
+            )}
+            {picked.key === 'sedih' &&
+              (hasActive ? (
+                <p className="mt-1.5 font-semibold">Ceritakan juga perasaan ini di sesi konselingmu nanti, ya.</p>
+              ) : canBook ? (
+                <Link to="/buat-janji" className="mt-2 flex items-center gap-1.5 font-semibold text-brand underline-offset-4 hover:underline">
+                  Buat janji dengan psikolog <ArrowRight size={15} />
+                </Link>
+              ) : null)}
+          </div>
         </div>
       )}
 
-      <div className="mt-5 border-t border-line pt-4">
-        <p className="eyebrow">7 hari terakhir</p>
-        <div className="mt-2.5 grid grid-cols-7 gap-1">
-          {week.map((d) => {
-            const k = log[ymd(d)];
-            const isToday = ymd(d) === today;
-            return (
-              <div key={ymd(d)} className="flex flex-col items-center gap-1">
-                {k ? (
-                  <MoodFace mood={k} className="h-7 w-7" />
-                ) : (
-                  <span className={clsx('grid h-7 w-7 place-items-center rounded-full border-2 border-dashed', isToday ? 'border-[var(--acc-ring)]' : 'border-line')} />
-                )}
-                <span className={clsx('text-[11px]', isToday ? 'font-bold text-[var(--acc-ink)]' : 'text-ink-faint')}>{isToday ? 'Hari ini' : WD[d.getDay()]}</span>
-              </div>
-            );
-          })}
-        </div>
+      <p className="eyebrow mt-5">7 hari terakhir</p>
+      <div className="mt-2.5 grid grid-cols-7 items-end gap-1">
+        {week.map((d) => {
+          const k = log[ymd(d)];
+          const isToday = ymd(d) === today;
+          const face = k ? (
+            <MoodFace mood={k} className="h-7 w-7" />
+          ) : (
+            <span className={clsx('h-7 w-7 rounded-full border-2 border-dashed', isToday ? 'border-sky-300' : 'border-line')} />
+          );
+          return (
+            <div key={ymd(d)} className="flex flex-col items-center gap-1">
+              {isToday ? <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-sky-200 bg-sky-100">{face}</span> : face}
+              <span className={clsx('text-[11px] leading-normal', isToday ? 'font-bold text-ink' : 'text-ink-faint')}>{isToday ? 'Hari ini' : WD[d.getDay()]}</span>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -357,17 +251,21 @@ const CARE: Record<DayPart, { title: string; tips: string[] }> = {
   malam: { title: 'Waktunya beristirahat', tips: ['Jauhkan layar 30 menit sebelum tidur', 'Redupkan lampu dan dengarkan musik tenang', 'Ucapkan terima kasih pada dirimu hari ini'] },
 };
 
-export function SelfCare({ userId, part, now, accent, breatheSignal }: { userId: number; part: DayPart; now: Date; accent: Accent; breatheSignal: number }) {
+export function SelfCare({ userId, part, now, breatheSignal }: { userId: number; part: DayPart; now: Date; breatheSignal: number }) {
   const care = CARE[part];
   const [done, setDone] = useLocal<number[]>(`tc:care:${userId}:${ymd(now)}:${part}`, []);
   const toggle = (i: number) => setDone(done.includes(i) ? done.filter((x) => x !== i) : [...done, i]);
   const all = done.length === care.tips.length;
 
   return (
-    <section className="card card-pad">
-      <p className="eyebrow" style={{ color: accent.acc }}>Untukmu {part} ini</p>
-      <h2 className="mt-1 font-brand text-[19px] font-semibold">{care.title}</h2>
-      <ul className="mt-3.5 space-y-2">
+    <section className="card card-pad relative overflow-hidden shadow-soft">
+      <img src={windowArt} alt="" width={130} height={172} className="pointer-events-none absolute right-[23px] top-[21px] hidden sm:block" />
+      <div className="relative flex items-center gap-2.5">
+        <IconChip icon={PART_ICON[part]} size={32} />
+        <p className="text-[13px] font-semibold leading-normal text-brand">Untukmu {part} ini</p>
+      </div>
+      <h2 className="relative mt-2.5 font-brand text-[26px] font-bold leading-[1.2]">{care.title}</h2>
+      <ul className="relative mt-3 w-full max-w-[380px] space-y-1.5">
         {care.tips.map((t, i) => {
           const on = done.includes(i);
           return (
@@ -376,11 +274,13 @@ export function SelfCare({ userId, part, now, accent, breatheSignal }: { userId:
                 type="button"
                 onClick={() => toggle(i)}
                 aria-pressed={on}
-                className="flex w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left text-[14px] transition-colors hover:bg-canvas"
+                className="flex w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left text-[14px] leading-normal transition-colors hover:bg-canvas"
               >
                 <span
-                  className={clsx('grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-all', on ? 'scale-105 border-transparent text-white' : 'border-line text-transparent')}
-                  style={on ? { background: accent.acc } : undefined}
+                  className={clsx(
+                    'grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-all',
+                    on ? 'scale-105 border-transparent bg-brand text-white' : 'border-line text-transparent',
+                  )}
                 >
                   <Check size={14} strokeWidth={3} />
                 </span>
@@ -390,8 +290,8 @@ export function SelfCare({ userId, part, now, accent, breatheSignal }: { userId:
           );
         })}
       </ul>
-      {all && <p className="mt-2 animate-rise text-[13px] font-semibold" style={{ color: accent.ink }}>Semua selesai — kamu hebat sudah merawat dirimu. 💙</p>}
-      <Breathing accent={accent} signal={breatheSignal} />
+      {all && <p className="relative mt-2 animate-rise text-[13px] font-semibold text-brand">Semua selesai — kamu hebat sudah merawat dirimu. 💙</p>}
+      <Breathing signal={breatheSignal} />
     </section>
   );
 }
@@ -403,7 +303,7 @@ const PHASES = [
 ] as const;
 const CYCLES = 4;
 
-function Breathing({ accent, signal }: { accent: Accent; signal: number }) {
+function Breathing({ signal }: { signal: number }) {
   const [step, setStep] = useState(-1); // -1 = belum mulai
   const [left, setLeft] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -428,37 +328,34 @@ function Breathing({ accent, signal }: { accent: Accent; signal: number }) {
   }, [step, phase]);
 
   return (
-    <div ref={ref} className="mt-5 flex items-center gap-4 rounded-2xl p-4" style={{ background: accent.soft }}>
-      <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
-        <span className="absolute inset-0 rounded-full opacity-25" style={{ background: accent.acc }} />
+    <div ref={ref} className="relative mt-[18px] flex items-center gap-3.5 rounded-2xl border border-sky-100 bg-sky-50 py-3.5 pl-3.5 pr-4">
+      <div className="relative grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-sky-100">
         <span
-          className="absolute inset-[6px] rounded-full ease-in-out"
+          className="absolute inset-0 rounded-full bg-brand ease-in-out"
           style={{
-            background: accent.acc,
-            opacity: 0.85,
+            opacity: running ? 0.85 : 0,
             transform: `scale(${phase ? phase.scale : 0.6})`,
-            transitionProperty: 'transform',
-            transitionDuration: `${phase ? phase.secs : 0.6}s`,
+            transitionProperty: 'transform, opacity',
+            transitionDuration: `${phase ? phase.secs : 0.3}s`,
           }}
         />
-        <span className="relative font-brand text-[18px] font-bold text-white tabular-nums">{running ? left : <Wind size={20} />}</span>
+        <span className="relative font-brand text-[18px] font-bold tabular-nums text-white">
+          {running ? left : <Wind size={22} strokeWidth={2} absoluteStrokeWidth className="text-brand" />}
+        </span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-brand text-[16px] font-semibold" style={{ color: accent.ink }}>
-          {phase ? phase.label : 'Latihan napas 1 menit'}
-        </p>
-        <p className="text-[12.5px]" style={{ color: accent.ink, opacity: 0.75 }}>
+        <p className="font-brand text-[16px] font-semibold leading-[1.3] text-brand">{phase ? phase.label : 'Latihan napas 1 menit'}</p>
+        <p className="text-[12.5px] text-ink-soft">
           {running ? `Putaran ${Math.floor(step / PHASES.length) + 1} dari ${CYCLES}` : 'Tarik 4 detik · tahan 4 · hembuskan 6'}
         </p>
       </div>
       <button
         type="button"
         onClick={() => setStep(running ? -1 : 0)}
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white shadow-soft transition-transform active:scale-95"
-        style={{ color: accent.acc }}
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand text-white shadow-[0_8px_16px_-8px_rgba(37,124,243,0.4)] transition-transform hover:brightness-95 active:scale-95"
         aria-label={running ? 'Hentikan latihan napas' : 'Mulai latihan napas'}
       >
-        {running ? <Pause size={18} /> : <Play size={18} className="translate-x-px" />}
+        {running ? <Pause size={18} fill="currentColor" /> : <Play size={18} strokeWidth={2} absoluteStrokeWidth fill="currentColor" className="translate-x-px" />}
       </button>
     </div>
   );
@@ -484,17 +381,23 @@ const AFFIRMATIONS = [
   'Satu hari yang buruk bukan berarti hidup yang buruk.',
 ];
 
-export function Affirmation({ seed, accent, part }: { seed: number; accent: Accent; part: DayPart }) {
+export function Affirmation({ seed }: { seed: number }) {
   const text = AFFIRMATIONS[seed % AFFIRMATIONS.length];
-  const night = SKY[part].night;
+  const sparkle = { strokeWidth: 2, absoluteStrokeWidth: true, fill: 'currentColor', 'aria-hidden': true } as const;
   return (
     <section
-      className="relative overflow-hidden rounded-3xl p-5 sm:p-6"
-      style={{ background: night ? 'linear-gradient(135deg,#15295A,#24427A)' : `linear-gradient(135deg, ${accent.soft}, #FFFFFF)`, color: night ? '#F3F6FF' : accent.ink }}
+      className="relative overflow-hidden rounded-3xl border border-sky-100 py-6 pl-6 pr-[72px] shadow-soft"
+      style={{ backgroundImage: 'linear-gradient(156deg, #EEF6FE 0%, #CEE4FD 100%)' }}
     >
-      <Quote size={56} className="absolute -right-2 -top-2 opacity-10" />
-      <p className="eyebrow" style={{ color: 'inherit', opacity: 0.7 }}>Pesan untukmu hari ini</p>
-      <p className="display mt-2 text-[26px] italic leading-snug sm:text-[28px]">“{text}”</p>
+      <img src={cloudArt} alt="" width={230} height={100} className="pointer-events-none absolute -bottom-[38.67px] -right-[41px]" />
+      <Sparkle size={26} {...sparkle} className="pointer-events-none absolute right-[31px] top-[21px] text-white" />
+      <Sparkle size={14} {...sparkle} className="pointer-events-none absolute right-[15px] top-[57px] text-white opacity-90" />
+      <Sparkle size={12} {...sparkle} className="pointer-events-none absolute bottom-[29px] right-[83px] text-white opacity-90" />
+      <div className="relative flex items-center gap-2.5">
+        <IconChip icon={Quote} size={32} className="bg-canvas" />
+        <p className="text-[13px] font-semibold leading-normal text-ink-soft">Pesan untukmu hari ini</p>
+      </div>
+      <p className="display relative mt-3.5 text-[30px] italic leading-[1.3] text-sky-900">“{text}”</p>
     </section>
   );
 }
@@ -509,21 +412,22 @@ const STEPS = [
   ['Hasil & feedback', 'Lihat hasil dan tindak lanjut dari psikolog, lalu bagikan pengalamanmu.'],
 ];
 
-export function Journey({ tickets, el, joinedAt, accent }: { tickets: Ticket[]; el?: Eligibility; joinedAt: string; accent: Accent }) {
+export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eligibility; joinedAt: string }) {
   const done = tickets.filter((t) => t.status === 'completed' || t.status === 'awaiting_report');
   const last = [...done].sort((a, b) => (a.scheduledStart < b.scheduledStart ? 1 : -1))[0];
   const quota = el ? Math.min(1, el.yearCount / Math.max(1, el.maxPerYear)) : 0;
 
   if (tickets.length === 0) {
     return (
-      <section className="card card-pad">
-        <h2 className="font-brand text-[19px] font-semibold">Pertama kali di sini? Begini caranya</h2>
-        <ol className="mt-4 grid gap-5 sm:grid-cols-2">
+      <section className="card card-pad shadow-soft">
+        <div className="flex items-center gap-3.5">
+          <IconChip icon={Route} />
+          <h2 className={cardTitle}>Pertama kali di sini? Begini caranya</h2>
+        </div>
+        <ol className="mt-5 grid gap-5 sm:grid-cols-2">
           {STEPS.map(([t, d], i) => (
             <li key={t} className="flex gap-3.5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-brand text-[16px] font-bold" style={{ background: accent.soft, color: accent.ink }}>
-                {i + 1}
-              </span>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-50 font-brand text-[16px] font-bold text-brand">{i + 1}</span>
               <div>
                 <p className="text-sm font-semibold">{t}</p>
                 <p className="text-[13.5px] leading-relaxed text-ink-soft">{d}</p>
@@ -537,43 +441,54 @@ export function Journey({ tickets, el, joinedAt, accent }: { tickets: Ticket[]; 
   }
 
   return (
-    <section className="card card-pad">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-brand text-[19px] font-semibold">Perjalananmu</h2>
-        <Link to="/pendaftaran" className="inline-flex items-center gap-1 text-[13px] font-semibold" style={{ color: accent.acc }}>
-          Semua pendaftaran <ArrowRight size={14} />
+    <section className="card card-pad shadow-soft">
+      <div className="flex items-center gap-3.5">
+        <IconChip icon={Route} />
+        <div className="min-w-0 flex-1">
+          <h2 className={cardTitle}>Perjalananmu</h2>
+          {done.length > 0 && (
+            <p className="mt-0.5 text-[13px] leading-normal text-ink-soft">
+              Kamu sudah <b className="text-ink">{done.length} kali</b> berani bercerita. Itu bukan hal kecil.
+            </p>
+          )}
+        </div>
+        <Link to="/pendaftaran" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-brand">
+          Semua pendaftaran <ArrowRight size={14} strokeWidth={2} absoluteStrokeWidth />
         </Link>
       </div>
-      {done.length > 0 && (
-        <p className="mt-1 text-[14px] text-ink-soft">
-          Kamu sudah <b className="text-ink">{done.length} kali</b> berani bercerita. Itu bukan hal kecil.
-        </p>
-      )}
-      <dl className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-canvas p-3.5">
-          <dt className="text-[12px] font-semibold text-ink-faint">Sesi tahun ini</dt>
-          <dd className="mt-1 font-brand text-[22px] font-bold leading-none">
-            {el?.yearCount ?? 0}
-            <span className="text-[14px] font-medium text-ink-faint"> / {el?.maxPerYear ?? '–'}</span>
-          </dd>
-          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-line">
-            <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${quota * 100}%`, background: accent.acc }} />
-          </div>
-        </div>
-        <div className="rounded-2xl bg-canvas p-3.5">
-          <dt className="text-[12px] font-semibold text-ink-faint">Bersama sejak</dt>
-          <dd className="mt-1 font-brand text-[18px] font-bold leading-tight">{fmtDate(joinedAt, 'MMMM yyyy')}</dd>
-        </div>
-      </dl>
-      {last && (
-        <Link to={`/pendaftaran/${last.id}`} className="mt-3 flex items-center gap-3 rounded-2xl border border-line p-3.5 transition-colors hover:bg-canvas">
+
+      <div className="mt-[18px] space-y-4">
+        <dl className="flex flex-col gap-4 rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4 sm:flex-row sm:items-center sm:gap-5">
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-semibold text-ink-faint">Sesi terakhir · {fmtDate(last.scheduledStart, 'd MMMM yyyy')}</p>
-            <p className="truncate text-[14px] font-semibold">{fullPsychName(last.psychologist)}</p>
+            <dt className="text-[12px] font-semibold text-ink-faint">Sesi tahun ini</dt>
+            <dd className="mt-1 font-brand text-[22px] font-bold leading-none">
+              {el?.yearCount ?? 0}
+              <span className="text-[14px] font-semibold text-ink-faint"> / {el?.maxPerYear ?? '–'}</span>
+            </dd>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
+              <div className="h-full rounded-full bg-brand transition-[width] duration-700" style={{ width: `${quota * 100}%` }} />
+            </div>
           </div>
-          <ArrowRight size={16} className="shrink-0 text-ink-faint" />
-        </Link>
-      )}
+          <div className="hidden h-[52px] w-px shrink-0 bg-sky-200 sm:block" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <IconChip icon={Calendar} size={40} className="bg-white" />
+            <div>
+              <dt className="text-[12px] font-semibold text-ink-faint">Bersama sejak</dt>
+              <dd className="mt-0.5 font-brand text-[18px] font-bold leading-tight">{fmtDate(joinedAt, 'MMMM yyyy')}</dd>
+            </div>
+          </div>
+        </dl>
+        {last && (
+          <Link to={`/pendaftaran/${last.id}`} className="flex items-center gap-3 rounded-2xl border border-line p-3.5 transition-colors hover:bg-canvas">
+            <Avatar name={last.psychologist.name} src={last.psychologist.avatarUrl} tone={last.psychologist.avatarTone} size={43} shape="rounded" />
+            <div className="min-w-0 flex-1 font-semibold">
+              <p className="text-[12px] text-ink-faint">Sesi terakhir · {fmtDate(last.scheduledStart, 'd MMMM yyyy')}</p>
+              <p className="truncate text-[14px] leading-normal">{fullPsychName(last.psychologist)}</p>
+            </div>
+            <ArrowRight size={16} strokeWidth={2} absoluteStrokeWidth className="shrink-0 text-ink-faint" />
+          </Link>
+        )}
+      </div>
     </section>
   );
 }

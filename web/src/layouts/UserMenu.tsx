@@ -22,8 +22,8 @@ export function UserMenu({ profilePath, direction = 'down', full }: { profilePat
       <button
         onClick={() => setOpen((o) => !o)}
         className={clsx(
-          'flex items-center gap-2.5 rounded-2xl text-left transition-colors hover:bg-sky-50',
-          full ? 'w-full p-2' : 'p-1',
+          'flex items-center gap-2.5 text-left transition-colors',
+          full ? 'w-full rounded-2xl p-2 hover:bg-sky-50' : 'rounded-full border border-line bg-white p-0.5 hover:border-sky-200',
         )}
         aria-expanded={open}
         aria-label="Menu akun"

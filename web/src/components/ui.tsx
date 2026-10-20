@@ -135,20 +135,24 @@ export function Avatar({
   src,
   tone,
   size = 36,
+  shape = 'circle',
   className,
 }: {
   name: string;
   src?: string | null;
   tone?: string | null;
   size?: number;
+  /** rounded = kotak bersudut lembut, mis. foto psikolog di kartu "Sesi terakhir". */
+  shape?: 'circle' | 'rounded';
   className?: string;
 }) {
+  const round = shape === 'rounded' ? 'rounded-[37%]' : 'rounded-full';
   if (src) {
     return (
       <img
         src={src}
         alt=""
-        className={clsx('shrink-0 rounded-full object-cover ring-1 ring-black/5', className)}
+        className={clsx('shrink-0 object-cover ring-1 ring-black/5', round, className)}
         style={{ width: size, height: size }}
         loading="lazy"
       />
@@ -163,7 +167,7 @@ export function Avatar({
   const key = tone && AVATAR_TONES[tone] ? tone : TONE_KEYS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 5];
   return (
     <span
-      className={clsx('inline-grid shrink-0 place-items-center rounded-full font-semibold', AVATAR_TONES[key].cls, className)}
+      className={clsx('inline-grid shrink-0 place-items-center font-semibold', round, AVATAR_TONES[key].cls, className)}
       style={{ width: size, height: size, fontSize: size * 0.36 }}
       aria-hidden
     >
