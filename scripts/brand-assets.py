@@ -10,6 +10,9 @@ Menghasilkan:
   web/public/favicon.*, apple-touch-icon.png, icon-192/512.png
 
 Jalankan dari root repo:  python scripts/brand-assets.py   (butuh pillow, numpy, scipy)
+
+File sumber logo (±1 MB) tidak disimpan di repo karena tidak dikirim ke browser. Ambil dulu dari riwayat git:
+  git show dd2879d:web/src/assets/auth/logo-teman-cerita.png > web/src/assets/auth/logo-teman-cerita.png
 """
 from pathlib import Path
 
