@@ -8,6 +8,7 @@ import type { User } from '@/lib/types';
 import { Field, Spinner } from '@/components/ui';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { useWelcomeSplash } from '@/components/WelcomeSplash';
+import logo from '@/assets/auth/logo-brilian.png';
 
 const DEMO = [
   { label: 'Pekerja', id: '90001234' },
@@ -41,16 +42,27 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout variant="dreamy">
-      <h1 className="text-[30px] font-semibold leading-tight tracking-tight">
-        Hai, senang <span className="display italic text-sky-600">ketemu</span> lagi.
-      </h1>
-      <p className="mt-2 text-ink-soft">Masuk dengan PN kamu. Psikolog dan admin memakai email.</p>
+    <AuthLayout>
+      <div className="text-center">
+        <img src={logo} alt="Teman Cerita BRILiaN" width={100} height={115} className="mx-auto h-[115px] w-[100px] object-contain" />
+        <h1 className="mt-3 text-[30px] font-semibold leading-tight tracking-tight">
+          Hai, senang <span className="display italic text-sky-600">ketemu</span> lagi.
+        </h1>
+        <p className="mt-2 text-ink-soft">Masuk pakai email atau PN kamu.</p>
+      </div>
 
       <form onSubmit={submit} className="mt-8 space-y-4">
-        <Field label="PN atau email">
+        <Field label="Email atau PN">
           {(id) => (
-            <input id={id} className="input" autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="90001234" required />
+            <input
+              id={id}
+              className="input"
+              autoComplete="username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="nama@kantor.co.id atau 90001234"
+              required
+            />
           )}
         </Field>
         <Field label="Password">
@@ -69,32 +81,33 @@ export default function Login() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-[13px] text-ink-faint">
-        Tidak perlu mendaftar — data pekerja sudah terhubung berdasarkan PN. Kendala masuk? Hubungi admin Teman Cerita.
-      </p>
-
-      <div className="mt-10 rounded-3xl border border-dashed border-sky-200 bg-sky-50/50 p-4">
-        <div className="flex items-baseline justify-between">
-          <span className="eyebrow text-sky-700/80">Akun demo</span>
-          <span className="text-[12px] text-ink-faint">password: demo1234</span>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {DEMO.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              disabled={login.isPending}
-              onClick={() => {
-                setIdentifier(d.id);
-                setPassword('demo1234');
-                login.mutate({ identifier: d.id, password: 'demo1234' });
-              }}
-              className="btn btn-secondary btn-sm rounded-xl"
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
+      {/* Ruang kosong di bawah tombol sesuai desain; akun demo hanya tampil saat pengembangan. */}
+      <div className="min-h-[45px] pt-6">
+        {import.meta.env.DEV && (
+          <div className="rounded-3xl border border-dashed border-sky-200 bg-sky-50/50 p-4">
+            <div className="flex items-baseline justify-between">
+              <span className="eyebrow text-sky-700/80">Akun demo</span>
+              <span className="text-[12px] text-ink-faint">password: demo1234</span>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {DEMO.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  disabled={login.isPending}
+                  onClick={() => {
+                    setIdentifier(d.id);
+                    setPassword('demo1234');
+                    login.mutate({ identifier: d.id, password: 'demo1234' });
+                  }}
+                  className="btn btn-secondary btn-sm rounded-xl"
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </AuthLayout>
   );
