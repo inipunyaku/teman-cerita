@@ -1,13 +1,14 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, CalendarRange, ChartNoAxesColumn, Building2, LayoutGrid, Stethoscope, Users } from 'lucide-react';
+import { CalendarDays, CalendarRange, ChartNoAxesColumn, Building2, Headset, LayoutGrid, Stethoscope, Users } from 'lucide-react';
 import { TalkIcon } from './components/icons';
 import { api } from './lib/api';
 import { homeFor, useAuth } from './lib/auth';
 import { useRealtime } from './lib/realtime';
 import type { Role } from '@shared/constants';
 import { BrandLoader } from './components/Brand';
+import { SupportWidget } from './components/support/SupportWidget';
 import { EmployeeLayout } from './layouts/EmployeeLayout';
 import { StaffLayout } from './layouts/StaffLayout';
 import Login from './pages/auth/Login';
@@ -26,6 +27,7 @@ import AdminTicketDetail from './pages/admin/TicketDetail';
 import Employees from './pages/admin/Employees';
 import Staff from './pages/admin/Staff';
 import Units from './pages/admin/Units';
+import AdminSupport from './pages/admin/Support';
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 
@@ -51,6 +53,11 @@ function AdminShell() {
     queryFn: () => api.get<{ awaitingReport: number; today: number; upcoming: number }>('/admin/overview'),
     refetchInterval: 60_000,
   });
+  const { data: support } = useQuery({
+    queryKey: ['support', 'threads', ''],
+    queryFn: () => api.get<{ unread: number }>('/support/threads'),
+    refetchInterval: 60_000,
+  });
   return (
     <StaffLayout
       label="Admin"
@@ -58,6 +65,7 @@ function AdminShell() {
       nav={[
         { to: '/admin', label: 'Dashboard', icon: ChartNoAxesColumn, end: true },
         { to: '/admin/sesi', label: 'Sesi konseling', icon: TalkIcon, badge: data?.awaitingReport },
+        { to: '/admin/bantuan', label: 'Chat bantuan', icon: Headset, badge: support?.unread },
         { to: '/admin/ketersediaan', label: 'Ketersediaan psikolog', icon: CalendarRange },
         { to: '/admin/pekerja', label: 'Data pekerja', icon: Users },
         { to: '/admin/psikolog', label: 'Psikolog & admin', icon: Stethoscope },
@@ -113,11 +121,13 @@ export default function App() {
           <Route path="pekerja" element={<Employees />} />
           <Route path="psikolog" element={<Staff />} />
           <Route path="unit" element={<Units />} />
+          <Route path="bantuan" element={<AdminSupport />} />
           <Route path="profil" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <SupportWidget />
     </Suspense>
   );
 }

@@ -11,11 +11,11 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, url: string, body?: unknown, headers?: Record<string, string>): Promise<T> {
   const res = await fetch(`/api${url}`, {
     method,
     credentials: 'same-origin',
-    headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
+    headers: { ...(body !== undefined && { 'content-type': 'application/json' }), ...headers },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const data = res.headers.get('content-type')?.includes('json') ? await res.json() : {};
@@ -39,8 +39,8 @@ async function upload<T>(url: string, file: File): Promise<T> {
 
 export const api = {
   upload,
-  get: <T>(url: string) => request<T>('GET', url),
-  post: <T = { ok: true }>(url: string, body: unknown = {}) => request<T>('POST', url, body),
+  get: <T>(url: string, headers?: Record<string, string>) => request<T>('GET', url, undefined, headers),
+  post: <T = { ok: true }>(url: string, body: unknown = {}, headers?: Record<string, string>) => request<T>('POST', url, body, headers),
   patch: <T = { ok: true }>(url: string, body: unknown) => request<T>('PATCH', url, body),
   del: <T = { ok: true }>(url: string) => request<T>('DELETE', url),
 };

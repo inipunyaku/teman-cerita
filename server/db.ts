@@ -171,6 +171,29 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, id);
+
+-- Chat bantuan ke admin (tombol chat melayang). Pengguna login punya satu percakapan; tamu dikenali lewat token.
+CREATE TABLE IF NOT EXISTS support_threads (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  guest_name TEXT,
+  guest_pn TEXT,
+  guest_token TEXT UNIQUE,
+  last_message_at TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_support_threads_last ON support_threads(last_message_at);
+
+CREATE TABLE IF NOT EXISTS support_messages (
+  id INTEGER PRIMARY KEY,
+  thread_id INTEGER NOT NULL REFERENCES support_threads(id) ON DELETE CASCADE,
+  sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  from_admin INTEGER NOT NULL DEFAULT 0,
+  body TEXT NOT NULL,
+  read_at TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON support_messages(thread_id, id);
 `);
 
 // Kolom tambahan pada tabel users (profil ekspresi diri, master data pekerja, profil psikolog).

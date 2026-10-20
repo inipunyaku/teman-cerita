@@ -16,6 +16,7 @@ import { startJobs } from './jobs.js';
 import { adminRouter } from './routes/admin.js';
 import { statsRouter } from './routes/stats.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { supportRouter } from './routes/support.js';
 import { errorHandler } from './util.js';
 
 const app = express();
@@ -71,6 +72,7 @@ app.use('/api/availability', availabilityRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/support', supportRouter);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan.' }));
 
 const webDist = path.resolve('dist');

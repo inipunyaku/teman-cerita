@@ -589,7 +589,13 @@ ticketsRouter.post('/:id/report', requireRole('psychologist'), (req, res) => {
 // ---------------------------------------------------------------------------
 // Chat
 
+const hasMessages = db.prepare('SELECT 1 FROM messages WHERE ticket_id = ? LIMIT 1');
+
 function chatState(t: TicketRow) {
+  // Ruang chat hanya untuk sesi bermedia chat. Riwayat lama (mis. sebelum media diganti) tetap bisa dibaca.
+  if (t.mode !== 'chat') {
+    return { canRead: !!hasMessages.get(t.id), canSend: false, reason: 'Chat hanya tersedia untuk sesi dengan media Chat.' };
+  }
   if (t.status === 'cancelled') return { canRead: true, canSend: false, reason: 'Sesi dibatalkan. Chat hanya bisa dibaca.' };
   if (t.status === 'completed' || t.status === 'no_show') {
     const closesAt = new Date(Date.parse(t.completed_at ?? t.updated_at) + CHAT_GRACE_DAYS * 864e5);

@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from './auth';
-import type { Message, Notification } from './types';
+import type { Message, Notification, SupportEvent } from './types';
+import { OPEN_SUPPORT_EVENT } from '@/components/support/SupportWidget';
 
 /** Satu koneksi SSE per sesi: menyegarkan data dan menampilkan toast notifikasi. */
 export function useRealtime() {
@@ -52,6 +53,28 @@ export function useRealtime() {
     });
     es.addEventListener('account', () => {
       qc.invalidateQueries({ queryKey: ['me'] });
+    });
+    es.addEventListener('support', (e) => {
+      const ev = JSON.parse((e as MessageEvent).data) as SupportEvent;
+      qc.invalidateQueries({ queryKey: ['support'] });
+      const toAdmin = !ev.message.fromAdmin;
+      const isAdmin = user.role === 'admin';
+      if (toAdmin !== isAdmin) return; // pesan sendiri
+      if (isAdmin) {
+        if (window.location.pathname === '/admin/bantuan') return;
+        toast(`Chat bantuan dari ${ev.name ?? 'pengguna'}`, {
+          description: ev.message.body.length > 90 ? ev.message.body.slice(0, 90) + '…' : ev.message.body,
+          action: { label: 'Balas', onClick: () => navigate(`/admin/bantuan?c=${ev.threadId}`) },
+        });
+      } else {
+        toast('Balasan dari admin', {
+          description: ev.message.body.length > 90 ? ev.message.body.slice(0, 90) + '…' : ev.message.body,
+          action: { label: 'Buka', onClick: () => window.dispatchEvent(new Event(OPEN_SUPPORT_EVENT)) },
+        });
+      }
+    });
+    es.addEventListener('support-read', () => {
+      qc.invalidateQueries({ queryKey: ['support'] });
     });
     return () => es.close();
   }, [user?.id, qc, navigate]);

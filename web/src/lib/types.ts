@@ -238,3 +238,41 @@ export interface Psychologist extends PsychProfile {
   openBlocks: number;
   satisfaction: number | null;
 }
+
+// ---------------------------------------------------------------------------
+// Chat bantuan ke admin (tombol chat melayang)
+
+export interface SupportMessage {
+  id: number;
+  threadId: number;
+  fromAdmin: boolean;
+  senderName: string | null;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SupportThread {
+  id: number;
+  guest: boolean;
+  name: string;
+  pn: string | null;
+  role: string | null;
+  roleLabel: string;
+  email: string | null;
+  unitName: string | null;
+  avatarUrl: string | null;
+  avatarTone: string | null;
+  /** Nama pekerja di master data bila PN yang diketik tamu cocok. */
+  pnMatch: string | null;
+  lastMessage: SupportMessage | null;
+  lastMessageAt: string | null;
+  unread: number;
+  createdAt: string;
+}
+
+export interface SupportEvent {
+  threadId: number;
+  message: SupportMessage;
+  name: string | null;
+}
