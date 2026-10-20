@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui';
 import { fmtDate, fullPsychName, ymd } from '@/lib/format';
 import { SKY, type Accent, type DayPart, useLocal } from '@/lib/personal';
 import type { Eligibility, Ticket } from '@/lib/types';
-import heroArt from '@/assets/home/hero-3d.png';
+import { HeroScene } from './HeroScene';
 import windowArt from '@/assets/home/window.svg';
 import cloudArt from '@/assets/home/cloud.svg';
 
@@ -76,7 +76,7 @@ export function GreetingHero({
       </div>
 
       <div className="relative h-[200px] shrink-0 sm:h-[260px] lg:h-auto lg:w-[640px]">
-        <img src={heroArt} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <HeroScene className="absolute inset-0" />
         {/* Memudarkan tepi ilustrasi ke latar hero */}
         <div className="absolute inset-x-0 -top-px h-16 bg-gradient-to-b from-[#F1F8FF] via-[rgba(241,248,255,0.85)] via-25% to-[rgba(241,248,255,0)] lg:inset-x-auto lg:-bottom-px lg:left-0 lg:h-auto lg:w-[177px] lg:bg-gradient-to-r" />
       </div>

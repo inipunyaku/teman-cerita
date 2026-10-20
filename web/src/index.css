@@ -225,15 +225,36 @@
 }
 @keyframes lgEllipsis { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 -10% 0 0); } }
 
-/* ---- Beranda pekerja: langit pagi/siang/sore/malam ---- */
-.hm-spin { animation: hmSpin 60s linear infinite; }
-.hm-glow { animation: hmGlow 4s ease-in-out infinite; }
-.hm-sunrise { animation: hmSunrise 1.8s cubic-bezier(.2, .8, .2, 1) both; }
+/* ---- Beranda pekerja: ilustrasi hero yang hidup (pages/employee/HeroScene.tsx) ---- */
+/* Karakter kanan & tangannya memakai animasi yang sama tanpa translate %, supaya tetap menempel. */
+.hs-breathe { animation: hsBreathe 4.5s ease-in-out infinite alternate; }
+.hs-spin { animation: hsSpin 50s linear infinite; }
+.hs-drift { animation: hsDrift 16s ease-in-out infinite alternate; }
+.hs-sway { animation: hsSway 4.2s ease-in-out infinite; }
+.hs-hop { animation: hsHop 4.2s ease-in-out infinite; }
+.hs-leaf { animation: hsLeaf 5.5s ease-in-out infinite alternate; }
+.hs-float { animation: hsFloat 3.6s ease-in-out infinite alternate; }
+.hs-dot { animation: hsDot 1.5s ease-in-out infinite; }
 .hm-confetti { opacity: 0; animation: hmConfetti 3.6s linear infinite; }
 
-@keyframes hmSpin { to { transform: rotate(360deg); } }
-@keyframes hmGlow { 0%, 100% { opacity: .7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
-@keyframes hmSunrise { from { opacity: 0; transform: translateY(70px); } to { opacity: 1; transform: none; } }
+@keyframes hsBreathe { to { transform: scale(1.05); } }
+@keyframes hsSpin { to { transform: rotate(360deg); } }
+@keyframes hsDrift { from { transform: translateX(var(--hs-from, 0)); } to { transform: translateX(var(--hs-to, 8%)); } }
+@keyframes hsSway {
+  0%, 100% { transform: rotate(0) scale(1, 1); }
+  25% { transform: rotate(-1.6deg) scale(1, 1.015); }
+  50% { transform: rotate(0) scale(1, .995); }
+  75% { transform: rotate(1.6deg) scale(1, 1.015); }
+}
+@keyframes hsHop {
+  0%, 44%, 100% { transform: none; }
+  14% { transform: translateY(-2.4%) scale(.99, 1.02); }
+  28% { transform: translateY(0) scale(1.025, .975); }
+  36% { transform: translateY(-.6%); }
+}
+@keyframes hsLeaf { from { transform: rotate(-2deg); } to { transform: rotate(2.5deg); } }
+@keyframes hsFloat { from { transform: translateY(1%) rotate(1deg); } to { transform: translateY(-3.5%) rotate(-2deg); } }
+@keyframes hsDot { 0%, 55%, 100% { transform: translateY(0); } 25% { transform: translateY(-20%); } }
 @keyframes hmConfetti {
   0% { opacity: 0; transform: translateY(-24px) rotate(0); }
   10% { opacity: 1; }
