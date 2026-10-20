@@ -226,35 +226,120 @@
 @keyframes lgEllipsis { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 -10% 0 0); } }
 
 /* ---- Beranda pekerja: ilustrasi hero yang hidup (pages/employee/HeroScene.tsx) ---- */
-/* Karakter kanan & tangannya memakai animasi yang sama tanpa translate %, supaya tetap menempel. */
-.hs-breathe { animation: hsBreathe 4.5s ease-in-out infinite alternate; }
-.hs-spin { animation: hsSpin 50s linear infinite; }
-.hs-drift { animation: hsDrift 16s ease-in-out infinite alternate; }
-.hs-sway { animation: hsSway 4.2s ease-in-out infinite; }
-.hs-hop { animation: hsHop 4.2s ease-in-out infinite; }
-.hs-leaf { animation: hsLeaf 5.5s ease-in-out infinite alternate; }
-.hs-float { animation: hsFloat 3.6s ease-in-out infinite alternate; }
-.hs-dot { animation: hsDot 1.5s ease-in-out infinite; }
+/* Siklus sapaan 8 dtk: kiri melambai → tengah melompat → kanan bersandar & menepuk. Hembusan angin 7 dtk. */
+/* Badan kanan & tangannya memakai keyframe yang sama (hanya rotate/scale) supaya tetap menempel. */
+.hs-breathe { animation: hsBreathe 4s ease-in-out infinite alternate; }
+.hs-spin { animation: hsSpin 40s linear infinite; }
+.hs-drift { animation: hsDrift 12s ease-in-out infinite alternate; }
+.hs-travel { opacity: 0; animation: hsTravel 40s linear infinite; }
+.hs-left { animation: hsLeftHi 8s ease-in-out infinite; }
+.hs-wave { animation: hsWave 8s ease-in-out infinite; }
+.hs-center { animation: hsCenterHop 8s ease-in-out infinite; }
+.hs-right { animation: hsRightHug 8s ease-in-out infinite; }
+.hs-pat { animation: hsPat 8s ease-in-out infinite; }
+.hs-blink { animation: hsBlink 8s linear infinite; }
+.hs-gust { animation: hsGust 7s ease-in-out infinite; }
+.hs-wind { opacity: 0; stroke-dasharray: 30 100; stroke-dashoffset: 30; animation: hsWind 7s ease-in-out infinite; }
+.hs-leaf-fly { opacity: 0; animation: hsLeafFly 7s ease-in-out infinite; }
+.hs-float { animation: hsFloat 3.2s ease-in-out infinite alternate; }
+.hs-dot { animation: hsDot 1.4s ease-in-out infinite; }
+.hs-bird { opacity: 0; animation: hsBird 18s linear infinite; }
+.hs-bird-bob { animation: hsBirdBob 1.3s ease-in-out infinite alternate; }
+.hs-flap { transform-box: fill-box; transform-origin: 50% 100%; animation: hsFlap .34s ease-in-out infinite alternate; }
 .hm-confetti { opacity: 0; animation: hmConfetti 3.6s linear infinite; }
 
-@keyframes hsBreathe { to { transform: scale(1.05); } }
+@keyframes hsBreathe { to { transform: scale(1.08); } }
 @keyframes hsSpin { to { transform: rotate(360deg); } }
 @keyframes hsDrift { from { transform: translateX(var(--hs-from, 0)); } to { transform: translateX(var(--hs-to, 8%)); } }
-@keyframes hsSway {
-  0%, 100% { transform: rotate(0) scale(1, 1); }
-  25% { transform: rotate(-1.6deg) scale(1, 1.015); }
-  50% { transform: rotate(0) scale(1, .995); }
-  75% { transform: rotate(1.6deg) scale(1, 1.015); }
+@keyframes hsTravel {
+  0% { opacity: 0; transform: translateX(-25cqw); }
+  6%, 94% { opacity: var(--o, .9); }
+  100% { opacity: 0; transform: translateX(125cqw); }
 }
-@keyframes hsHop {
-  0%, 44%, 100% { transform: none; }
-  14% { transform: translateY(-2.4%) scale(.99, 1.02); }
-  28% { transform: translateY(0) scale(1.025, .975); }
-  36% { transform: translateY(-.6%); }
+/* Condong ke kanan (ke balik karakter tengah) lebih jauh daripada ke kiri, supaya tidak ada celah di antara mereka. */
+@keyframes hsLeftHi {
+  0%, 100% { transform: none; }
+  5% { transform: rotate(-1.5deg) scale(1.03, .97); }
+  12% { transform: translateY(-3%) rotate(4deg) scale(.98, 1.04); }
+  18% { transform: rotate(-1.5deg); }
+  24% { transform: translateY(-3%) rotate(4deg) scale(.98, 1.04); }
+  30% { transform: rotate(-1deg); }
+  36% { transform: rotate(2.5deg); }
+  44% { transform: none; }
+  62% { transform: rotate(1.6deg); }
+  80% { transform: rotate(-1deg); }
 }
-@keyframes hsLeaf { from { transform: rotate(-2deg); } to { transform: rotate(2.5deg); } }
-@keyframes hsFloat { from { transform: translateY(1%) rotate(1deg); } to { transform: translateY(-3.5%) rotate(-2deg); } }
-@keyframes hsDot { 0%, 55%, 100% { transform: translateY(0); } 25% { transform: translateY(-20%); } }
+@keyframes hsWave {
+  0%, 6%, 42%, 100% { transform: none; }
+  10%, 20%, 30% { transform: rotate(-18deg); }
+  15%, 25% { transform: rotate(7deg); }
+  35% { transform: rotate(4deg); }
+}
+@keyframes hsCenterHop {
+  0%, 40%, 82%, 100% { transform: none; }
+  20% { transform: scale(1.012, .988); }
+  46% { transform: scale(1.07, .93); }
+  54% { transform: translateY(-7%) scale(.95, 1.07); }
+  62% { transform: scale(1.08, .92); }
+  68% { transform: translateY(-3%) scale(.98, 1.03); }
+  74% { transform: scale(1.03, .97); }
+}
+@keyframes hsRightHug {
+  0%, 100% { transform: none; }
+  12% { transform: rotate(1.6deg); }
+  26% { transform: rotate(-1.2deg); }
+  40% { transform: none; }
+  62% { transform: rotate(-5deg) scale(1, 1.03); }
+  70% { transform: rotate(-4deg); }
+  78% { transform: rotate(-5deg) scale(1, 1.02); }
+  88% { transform: rotate(-3deg); }
+  96% { transform: none; }
+}
+@keyframes hsPat {
+  0%, 60%, 92%, 100% { transform: none; }
+  66%, 74%, 82% { transform: rotate(6deg); }
+  70%, 78%, 86% { transform: none; }
+}
+@keyframes hsBlink {
+  0%, 29%, 33%, 84%, 88%, 90%, 94%, 100% { transform: scaleY(1); }
+  31%, 86%, 92% { transform: scaleY(.1); }
+}
+@keyframes hsGust {
+  0%, 100% { transform: none; }
+  15% { transform: rotate(2deg); }
+  30% { transform: rotate(-1.5deg); }
+  45% { transform: rotate(1deg); }
+  52% { transform: rotate(10deg); }
+  58% { transform: rotate(7deg); }
+  64% { transform: rotate(12deg); }
+  74% { transform: rotate(-4deg); }
+  84% { transform: rotate(2deg); }
+  92% { transform: rotate(-1deg); }
+}
+@keyframes hsWind {
+  0%, 44% { opacity: 0; stroke-dashoffset: 30; }
+  50%, 66% { opacity: .9; }
+  72%, 100% { opacity: 0; stroke-dashoffset: -100; }
+}
+@keyframes hsLeafFly {
+  0%, 46% { opacity: 0; transform: scale(var(--s, 1)); }
+  50% { opacity: 1; }
+  62% { transform: translate(var(--x1), var(--y1)) rotate(150deg) scale(var(--s, 1)); }
+  74% { transform: translate(var(--x2), var(--y2)) rotate(300deg) scale(var(--s, 1)); }
+  86% { opacity: 1; }
+  92%, 100% { opacity: 0; transform: translate(var(--x3), var(--y3)) rotate(460deg) scale(var(--s, 1)); }
+}
+@keyframes hsFloat { from { transform: translateY(2%) rotate(2deg); } to { transform: translateY(-6%) rotate(-3deg); } }
+@keyframes hsDot { 0%, 55%, 100% { transform: translateY(0); } 25% { transform: translateY(-24%); } }
+@keyframes hsBird {
+  0% { opacity: 0; transform: translate(0, 0); }
+  3%, 66% { opacity: 1; }
+  35% { transform: translate(58cqw, -5cqh); }
+  70% { opacity: 1; transform: translate(122cqw, 3cqh); }
+  71%, 100% { opacity: 0; transform: translate(122cqw, 3cqh); }
+}
+@keyframes hsBirdBob { to { transform: translateY(-22%); } }
+@keyframes hsFlap { to { transform: scaleY(-.65); } }
 @keyframes hmConfetti {
   0% { opacity: 0; transform: translateY(-24px) rotate(0); }
   10% { opacity: 1; }
