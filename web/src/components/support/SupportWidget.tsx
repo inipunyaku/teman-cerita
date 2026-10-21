@@ -5,6 +5,7 @@ import { ChevronDown, Headset, LogOut, MessageCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiError, api, errMsg } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useKeyboardOpen, useMediaQuery } from '@/lib/viewport';
 import type { SupportMessage } from '@/lib/types';
 import { Field, Spinner } from '../ui';
 import { SupportConversation } from './SupportMessages';
@@ -18,17 +19,6 @@ interface MeResponse {
   thread: { id: number; name: string | null; pn: string | null } | null;
   messages: SupportMessage[];
   unread: number;
-}
-
-function useMediaQuery(query: string) {
-  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setMatch(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, [query]);
-  return match;
 }
 
 /**
@@ -80,6 +70,8 @@ export function SupportWidget() {
   const enabled = !hidden && (!isGuest || !!token);
   const mobile = useMediaQuery('(max-width: 639px)');
   const fullscreen = open && mobile;
+  // Di HP, tombol melayang disembunyikan selama mengetik di halaman supaya tidak menutupi kolom.
+  const typing = useKeyboardOpen() && mobile && !open;
   const viewport = useVisualViewport(fullscreen);
   useScrollLock(fullscreen);
 
@@ -226,7 +218,7 @@ export function SupportWidget() {
         </div>
       )}
 
-      {!fullscreen && (
+      {!fullscreen && !typing && (
         <button
           onClick={() => setOpen((v) => !v)}
           className="relative grid h-14 w-14 place-items-center rounded-full bg-sky-600 text-white shadow-pop transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200"

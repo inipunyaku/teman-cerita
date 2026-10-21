@@ -1,9 +1,10 @@
-import { Suspense } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Suspense, useRef } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { Calendar, ClipboardList, House, UserRound } from 'lucide-react';
 import { Logo, PageLoading } from '@/components/ui';
 import { NotificationBell } from '@/components/NotificationBell';
+import { useAutoHideHeader, useKeyboardOpen, useMediaQuery } from '@/lib/viewport';
 import { UserMenu } from './UserMenu';
 
 const NAV = [
@@ -14,9 +15,21 @@ const NAV = [
 ];
 
 export function EmployeeLayout() {
+  const { pathname } = useLocation();
+  const headerRef = useRef<HTMLElement>(null);
+  const mobile = useMediaQuery('(max-width: 639px)');
+  // Di HP: header bersembunyi bila didiamkan; header & menu bawah disembunyikan saat keyboard terbuka.
+  const keyboard = useKeyboardOpen() && mobile;
+  const idle = useAutoHideHeader(headerRef, { enabled: mobile, resetKey: pathname });
   return (
-    <div className="min-h-dvh pb-24 sm:pb-10">
-      <header className="sticky top-0 z-30 border-b border-line bg-white/80 backdrop-blur-md">
+    <div className={clsx('min-h-dvh sm:pb-10', keyboard ? 'pb-4' : 'pb-24')}>
+      <header
+        ref={headerRef}
+        className={clsx(
+          'sticky top-0 z-30 border-b border-line bg-white/80 backdrop-blur-md transition-transform duration-300 ease-out',
+          (idle || keyboard) && '-translate-y-full',
+        )}
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6">
           <NavLink to="/" aria-label="Beranda">
             <Logo />
@@ -50,7 +63,7 @@ export function EmployeeLayout() {
           <Outlet />
         </Suspense>
       </main>
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur-md sm:hidden">
+      <nav className={clsx('pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur-md sm:hidden', keyboard && 'hidden')}>
         <div className="grid grid-cols-4">
           {NAV.map((n) => (
             <NavLink

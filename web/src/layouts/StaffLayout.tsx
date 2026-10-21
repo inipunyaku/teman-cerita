@@ -1,9 +1,10 @@
-import { Suspense, useEffect, useState, type ComponentType } from 'react';
+import { Suspense, useEffect, useRef, useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { Menu, X, type LucideProps } from 'lucide-react';
 import { Logo, PageLoading } from '@/components/ui';
 import { NotificationBell } from '@/components/NotificationBell';
+import { useAutoHideHeader, useKeyboardOpen, useMediaQuery } from '@/lib/viewport';
 import { UserMenu } from './UserMenu';
 
 export interface NavItem {
@@ -18,6 +19,11 @@ export function StaffLayout({ nav, profilePath, label }: { nav: NavItem[]; profi
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   useEffect(() => setOpen(false), [loc.pathname]);
+  const headerRef = useRef<HTMLElement>(null);
+  const mobile = useMediaQuery('(max-width: 1023px)');
+  // Di layar kecil: header bersembunyi bila didiamkan, dan saat keyboard terbuka.
+  const keyboard = useKeyboardOpen() && mobile;
+  const idle = useAutoHideHeader(headerRef, { enabled: mobile && !open, resetKey: loc.pathname });
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -66,7 +72,13 @@ export function StaffLayout({ nav, profilePath, label }: { nav: NavItem[]; profi
           <aside className="absolute inset-y-0 left-0 w-[280px] animate-rise bg-[#F3F9FE] shadow-pop">{sidebar}</aside>
         </div>
       )}
-      <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-line/70 bg-canvas/85 px-4 backdrop-blur-md sm:px-6 lg:px-10">
+      <header
+        ref={headerRef}
+        className={clsx(
+          'sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-line/70 bg-canvas/85 px-4 backdrop-blur-md transition-transform duration-300 ease-out sm:px-6 lg:px-10',
+          (idle || keyboard) && '-translate-y-full',
+        )}
+      >
         <div className="flex items-center gap-2 lg:hidden">
           <button className="btn btn-ghost w-10 px-0" onClick={() => setOpen(true)} aria-label="Buka menu">
             <Menu size={20} />
