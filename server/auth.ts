@@ -62,16 +62,37 @@ export function clearSession(res: Response) {
 
 const getUser = db.prepare('SELECT * FROM users WHERE id = ?');
 
-/** Mengisi req.user bila cookie sesi valid. Tidak menolak request. */
+/**
+ * Semua nilai cookie bernama `name`. Browser bisa mengirim lebih dari satu cookie bernama sama (mis. cookie lama
+ * dengan domain/path lain); cookie-parser hanya menyimpan yang pertama sehingga sesi baru bisa tertutup cookie lama.
+ */
+function cookieValues(req: Request, name: string) {
+  const out: string[] = [];
+  for (const part of (req.headers.cookie ?? '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) {
+      try {
+        out.push(decodeURIComponent(part.slice(i + 1).trim()));
+      } catch {
+        /* nilai rusak: lewati */
+      }
+    }
+  }
+  return out;
+}
+
+/** Mengisi req.user bila salah satu cookie sesi valid. Tidak menolak request. */
 export function loadUser(req: Request, _res: Response, next: NextFunction) {
-  const token = req.cookies?.[COOKIE];
-  if (token) {
+  for (const token of cookieValues(req, COOKIE)) {
     try {
       const payload = jwt.verify(token, config.jwtSecret) as { uid: number };
       const user = getUser.get(payload.uid) as UserRow | undefined;
-      if (user && user.status !== 'disabled') req.user = user;
+      if (user && user.status !== 'disabled') {
+        req.user = user;
+        break;
+      }
     } catch {
-      /* token tidak valid: anggap belum login */
+      /* token tidak valid: coba cookie berikutnya */
     }
   }
   next();
