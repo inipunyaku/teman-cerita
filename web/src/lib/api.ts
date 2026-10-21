@@ -32,7 +32,7 @@ async function upload<T>(url: string, file: File): Promise<T> {
     body: file,
   });
   const data = res.headers.get('content-type')?.includes('json') ? await res.json() : {};
-  if (res.status === 413) throw new ApiError(413, data.error ?? 'Ukuran file maksimal 2 MB.', data);
+  if (res.status === 413) throw new ApiError(413, data.error ?? 'Ukuran file terlalu besar.', data);
   if (!res.ok) throw new ApiError(res.status, data.error ?? 'Gagal mengirim file. Coba lagi.', data);
   return data as T;
 }

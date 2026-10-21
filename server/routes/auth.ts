@@ -9,6 +9,7 @@ import { config } from '../config.js';
 import { db, now } from '../db.js';
 import { clearSession, publicUser, requireAuth, setSession, type UserRow } from '../auth.js';
 import { fail, parse } from '../util.js';
+import { SERVICE_CONFIG } from '../serviceConfig.js';
 
 export const authRouter = Router();
 
@@ -125,7 +126,7 @@ authRouter.post('/avatar', requireAuth, express.json({ limit: '1mb' }), (req, re
   const m = /^data:image\/(webp|jpeg|png);base64,([A-Za-z0-9+/=]+)$/.exec(image);
   if (!m) fail(400, 'Format foto tidak didukung. Gunakan JPG, PNG, atau WebP.');
   const buf = Buffer.from(m![2], 'base64');
-  if (buf.length > 400 * 1024) fail(400, 'Ukuran foto terlalu besar (maks. 400 KB setelah dipotong).');
+  if (buf.length > SERVICE_CONFIG.avatarMaxKB * 1024) fail(400, `Ukuran foto maksimal ${SERVICE_CONFIG.avatarMaxKB} KB.`);
   const ext = m![1] === 'jpeg' ? 'jpg' : m![1];
   const file = `${req.user!.id}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
   fs.writeFileSync(path.join(AVATAR_DIR, file), buf);

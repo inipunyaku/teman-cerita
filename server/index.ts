@@ -18,6 +18,7 @@ import { statsRouter } from './routes/stats.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { supportRouter } from './routes/support.js';
 import { errorHandler } from './util.js';
+import { SERVICE_CONFIG } from './serviceConfig.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -62,6 +63,7 @@ app.use(compression());
 app.use('/avatars', express.static(AVATAR_DIR, { maxAge: '30d', immutable: true, fallthrough: false }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, email: mailTransport ?? false }));
+app.get('/api/meta/config', (_req, res) => res.json(SERVICE_CONFIG));
 app.get('/api/meta/units', (_req, res) => {
   res.json({ units: db.prepare('SELECT id, name, code FROM units WHERE active = 1 ORDER BY name').all() });
 });

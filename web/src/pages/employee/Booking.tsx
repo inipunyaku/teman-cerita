@@ -28,17 +28,16 @@ import { Avatar, Field, LogoMark, MODE_ICON, Sk, Spinner } from '@/components/ui
 import { SlotPicker, usePsychologists, type SlotValue } from '@/components/SlotPicker';
 import {
   CLIENT_TOPICS,
-  COMPLAINT_MIN,
   CONSENT_INTRO,
   CONSENT_SECTIONS,
   CONSENT_STATEMENT,
   IMPACT_LABEL,
   LIKERT,
   MODE_LABEL,
-  ROOM_PREFIX,
   SCREENING_ITEMS,
   type ClientTopic,
 } from '@shared/constants';
+import { fillInfo, gapText, useConfig } from '@/lib/config';
 
 const STEPS = ['Informasi & Consent', 'Data Diri', 'Skrining EANSCALE', 'Ceritakan Kebutuhanmu', 'Pilih Jadwal', 'Konfirmasi'];
 
@@ -94,6 +93,7 @@ function useDraft(userId: number, nickname: string) {
 }
 
 export default function Booking() {
+  const cfg = useConfig();
   const { user } = useAuth();
   const u = user!;
   const qc = useQueryClient();
@@ -157,7 +157,7 @@ export default function Booking() {
     true,
     draft.nickname.trim().length > 0,
     answered === SCREENING_ITEMS.length,
-    !!draft.topic && draft.complaint.trim().length >= COMPLAINT_MIN && draft.impact > 0 && draft.expectation.trim().length >= 3,
+    !!draft.topic && draft.complaint.trim().length >= cfg.complaintMin && draft.impact > 0 && draft.expectation.trim().length >= 3,
     !!(draft.slot.psychologistId && draft.slot.date && draft.slot.time && draft.slot.mode),
     true,
   ];
@@ -280,6 +280,7 @@ function StepCard({ title, description, children }: { title: string; description
 }
 
 function ConsentStep({ onAgree, onDecline }: { onAgree: () => void; onDecline: () => void }) {
+  const cfg = useConfig();
   const [read, setRead] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -330,7 +331,7 @@ function ConsentStep({ onAgree, onDecline }: { onAgree: () => void; onDecline: (
             {CONSENT_SECTIONS.map((sec, i) => (
               <li key={sec.title}>
                 <p className="font-semibold text-ink">{i + 1}. {sec.title}</p>
-                <p className="mt-1">{sec.body}</p>
+                <p className="mt-1">{fillInfo(sec.body, cfg)}</p>
               </li>
             ))}
           </ol>
@@ -420,7 +421,8 @@ function ScreeningStep({ answers, onChange, showErrors }: { answers: (number | n
 }
 
 function NeedsStep({ draft, set, showErrors }: { draft: Draft; set: (p: Partial<Draft>) => void; showErrors: boolean }) {
-  const left = COMPLAINT_MIN - draft.complaint.trim().length;
+  const cfg = useConfig();
+  const left = cfg.complaintMin - draft.complaint.trim().length;
   const err = {
     topic: showErrors && !draft.topic,
     complaint: showErrors && left > 0,
@@ -453,8 +455,8 @@ function NeedsStep({ draft, set, showErrors }: { draft: Draft; set: (p: Partial<
         </div>
 
         <Field
-          error={err.complaint ? (draft.complaint.trim() ? `Minimal ${COMPLAINT_MIN} karakter · kurang ${left} lagi` : 'Ceritakan keluhanmu (minimal 100 karakter).') : undefined}
-          label="Ceritakan lebih lanjut tentang keluhan yang kamu alami" hint={left > 0 ? `Minimal ${COMPLAINT_MIN} karakter · kurang ${left} lagi` : `${draft.complaint.trim().length} karakter`}>
+          error={err.complaint ? (draft.complaint.trim() ? `Minimal ${cfg.complaintMin} karakter · kurang ${left} lagi` : `Ceritakan keluhanmu (minimal ${cfg.complaintMin} karakter).`) : undefined}
+          label="Ceritakan lebih lanjut tentang keluhan yang kamu alami" hint={left > 0 ? `Minimal ${cfg.complaintMin} karakter · kurang ${left} lagi` : `${draft.complaint.trim().length} karakter`}>
           {(id) => <textarea id={id} className="input" rows={5} maxLength={3000} value={draft.complaint} onChange={(e) => set({ complaint: e.target.value })} placeholder="Tuliskan keluhan yang sedang kamu alami…" />}
         </Field>
 
@@ -491,6 +493,7 @@ function NeedsStep({ draft, set, showErrors }: { draft: Draft; set: (p: Partial<
 }
 
 function ConfirmStep({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => void }) {
+  const cfg = useConfig();
   const { data } = usePsychologists();
   const p = data?.psychologists.find((x) => x.id === draft.slot.psychologistId);
   const { date, time, mode } = draft.slot;
@@ -504,13 +507,13 @@ function ConfirmStep({ draft, onEdit }: { draft: Draft; onEdit: (step: number) =
         </div>
         <dl className="space-y-4 px-5 py-4 text-sm">
           <Row icon={<CalendarDays size={18} />} label="Tanggal">{date && fmtYmd(date)}</Row>
-          <Row icon={<Clock3 size={18} />} label="Waktu">{time && `${hmDot(time)} – ${hmDot(addMinutes(time, 60))} WIB (60 menit)`}</Row>
+          <Row icon={<Clock3 size={18} />} label="Waktu">{time && `${hmDot(time)} – ${hmDot(addMinutes(time, cfg.schedule.durationMin))} WIB (${cfg.schedule.durationMin} menit)`}</Row>
           <Row icon={p ? <Avatar name={p.name} src={p.avatarUrl} tone={p.avatarTone} size={36} /> : <UserRound size={18} />} label="Psikolog">{p && fullPsychName(p)}</Row>
           <Row icon={<Icon size={18} />} label="Media Konseling">
             {mode && MODE_LABEL[mode]}
             <span className="mt-0.5 block text-[13px] font-normal text-ink-soft">
               {mode === 'offline'
-                ? `${ROOM_PREFIX} — ruangan ditentukan otomatis dan tampil setelah pendaftaran berhasil.`
+                ? `${cfg.roomPrefix} — ruangan ditentukan otomatis dan tampil setelah pendaftaran berhasil.`
                 : mode === 'online'
                   ? 'Tautan Microsoft Teams akan tersedia di halaman pendaftaranmu.'
                   : 'Sesi berlangsung lewat ruang chat di halaman pendaftaranmu.'}
@@ -532,7 +535,7 @@ function ConfirmStep({ draft, onEdit }: { draft: Draft; onEdit: (step: number) =
       </div>
       <p className="mt-4 flex gap-2 rounded-2xl bg-sun-50 px-4 py-3 text-[13px] leading-relaxed text-sun-700">
         <Info size={16} className="mt-0.5 shrink-0" />
-        Sesi berlangsung 60 menit dengan toleransi keterlambatan maksimal 15 menit. Perubahan jadwal atau pembatalan paling lambat H-4 jam sebelum sesi.
+        Sesi berlangsung {cfg.schedule.durationMin} menit dengan toleransi keterlambatan maksimal {cfg.lateToleranceMin} menit. Perubahan jadwal atau pembatalan paling lambat H-{cfg.schedule.leadHours} jam sebelum sesi.
       </p>
     </StepCard>
   );
@@ -590,6 +593,7 @@ function Success({ ticket: t }: { ticket: Ticket }) {
 }
 
 function NotEligible({ el }: { el: Eligibility }) {
+  const cfg = useConfig();
   return (
     <div className="mx-auto max-w-xl animate-rise py-6 text-center">
       <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-sky-50 text-sky-700"><CalendarDays size={30} strokeWidth={1.75} /></span>
@@ -600,7 +604,7 @@ function NotEligible({ el }: { el: Eligibility }) {
       ) : (
         <Link to="/" className="btn btn-secondary mt-6">Kembali ke Beranda</Link>
       )}
-      <p className="mt-6 text-[13px] text-ink-faint">Layanan dapat diikuti maksimal {el.maxPerYear}x dalam setahun dengan jeda minimal 2 minggu antar sesi.</p>
+      <p className="mt-6 text-[13px] text-ink-faint">Layanan dapat diikuti maksimal {el.maxPerYear}x dalam setahun dengan jeda minimal {gapText(cfg.minGapDays)} antar sesi.</p>
     </div>
   );
 }

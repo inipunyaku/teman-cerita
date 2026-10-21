@@ -10,6 +10,7 @@ import { Avatar, PageHeader, Segmented, Stat } from '@/components/ui';
 import { StatsSkeleton } from '@/components/Skeletons';
 import { CASE_CATEGORIES, GENDER_LABEL, MODE_LABEL, SCREENING_LEVEL_LABEL, SCREENING_LEVELS, type CaseCategory, type Gender, type Mode, type ScreeningLevel } from '@shared/constants';
 import { Pagination, SearchInput, matchText, usePaged } from '@/components/table';
+import { useConfig } from '@/lib/config';
 
 type KV = { key: string; value: number };
 type Cross = { group: string; values: Record<string, number>; total?: number };
@@ -418,6 +419,7 @@ function BreakdownPanel({ title, data, keys, label, color, unit }: { title: stri
 }
 
 function PsychPanel({ rows }: { rows: Stats['psychologists'] }) {
+  const cfg = useConfig();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'low' | 'noslot' | 'upcoming'>('all');
   const list = rows.filter(
@@ -432,7 +434,7 @@ function PsychPanel({ rows }: { rows: Stats['psychologists'] }) {
   return (
     <section className="card overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 sm:px-6">
-        <p className="text-[13px] text-ink-faint">Slot = kapasitas sesi dari blok ketersediaan (maks. 4 sesi/hari, jeda 30 menit).</p>
+        <p className="text-[13px] text-ink-faint">Slot = kapasitas sesi dari blok ketersediaan (maks. {cfg.schedule.maxPerPsychPerDay} sesi/hari, jeda {cfg.schedule.gapMin} menit).</p>
         <Link to="/admin/ketersediaan" className="btn btn-soft btn-sm shrink-0"><CalendarRange size={15} /> Jadwal & ketersediaan</Link>
       </div>
       <div className="mt-3 grid gap-2 px-5 sm:grid-cols-[1fr_220px] sm:px-6">

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { Modal, Spinner } from './ui';
+import { useConfig } from '@/lib/config';
+import { toast } from 'sonner';
 
 const VIEW = 280; // ukuran area potong di layar (px)
 const OUT = 320; // ukuran foto hasil (px)
@@ -17,6 +19,7 @@ export function AvatarCropper({
   onDone: (dataUrl: string) => void;
   saving?: boolean;
 }) {
+  const cfg = useConfig();
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [zoom, setZoom] = useState(1);
   const [off, setOff] = useState({ x: 0, y: 0 });
@@ -52,20 +55,26 @@ export function AvatarCropper({
     setOff(pos);
   };
 
-  const exportImage = () => {
-    if (!img) return;
-    const k = OUT / VIEW;
+  const render = (size: number) => {
+    const k = size / VIEW;
     const canvas = document.createElement('canvas');
-    canvas.width = OUT;
-    canvas.height = OUT;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, OUT, OUT);
+    ctx.fillRect(0, 0, size, size);
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, (VIEW / 2 + pos.x - w / 2) * k, (VIEW / 2 + pos.y - h / 2) * k, w * k, h * k);
-    let url = canvas.toDataURL('image/webp', 0.86);
-    // Safari lama tidak bisa encode WebP dan mengembalikan PNG yang besar.
-    if (!url.startsWith('data:image/webp')) url = canvas.toDataURL('image/jpeg', 0.88);
+    ctx.drawImage(img!, (VIEW / 2 + pos.x - w / 2) * k, (VIEW / 2 + pos.y - h / 2) * k, w * k, h * k);
+    return canvas;
+  };
+
+  const exportImage = () => {
+    if (!img) return;
+    const url = compressToLimit(render, cfg.avatarMaxKB * 1024);
+    if (!url) {
+      toast.error('Foto tidak bisa dikecilkan sampai batas ukuran.', { description: `Maksimal ${cfg.avatarMaxKB} KB. Coba foto lain.` });
+      return;
+    }
     onDone(url);
   };
 
@@ -137,4 +146,26 @@ export function AvatarCropper({
       </div>
     </Modal>
   );
+}
+
+/** Ukuran berkas dari data URL base64 (byte). */
+const dataUrlBytes = (url: string) => Math.ceil(((url.length - url.indexOf(',') - 1) * 3) / 4);
+
+/**
+ * Kompres foto profil sampai di bawah `maxBytes` sebelum diunggah. Mulai dari kualitas tertinggi; kualitas
+ * diturunkan sedikit demi sedikit hanya bila perlu, lalu dimensi dikecilkan sebagai langkah terakhir.
+ * WebP dipakai bila browser mendukung, selain itu JPEG (Safari lama).
+ */
+function compressToLimit(render: (size: number) => HTMLCanvasElement, maxBytes: number): string | null {
+  const limit = maxBytes - 1024; // sisakan ruang supaya pasti di bawah batas server
+  const webp = render(8).toDataURL('image/webp').startsWith('data:image/webp');
+  const type = webp ? 'image/webp' : 'image/jpeg';
+  for (const size of [OUT, 280, 240, 200, 160]) {
+    const canvas = render(size);
+    for (const q of [0.92, 0.86, 0.8, 0.72, 0.64, 0.56, 0.48]) {
+      const url = canvas.toDataURL(type, q);
+      if (dataUrlBytes(url) <= limit) return url;
+    }
+  }
+  return null;
 }

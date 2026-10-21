@@ -7,9 +7,10 @@ import { api, errMsg } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { fmtBytes, fmtDay, fmtTime } from '@/lib/format';
 import type { Attachment, ChatState, Message } from '@/lib/types';
-import { ATTACHMENT_MAX_BYTES, ATTACHMENT_TYPES, attachmentExt } from '@shared/constants';
+import { ATTACHMENT_TYPES, attachmentExt } from '@shared/constants';
 import { Avatar, Spinner } from './ui';
 import { ChatSkeleton } from './Skeletons';
+import { useConfig } from '@/lib/config';
 
 const ACCEPT = Object.keys(ATTACHMENT_TYPES)
   .map((ext) => `.${ext}`)
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSubtitle, className }: Props) {
+  const cfg = useConfig();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [text, setText] = useState('');
@@ -38,6 +40,10 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
   });
   const messages = data?.messages ?? [];
   const state = data?.state;
+  // Kuota lampiran per sesi chat & ukuran maksimal per file (pengaturan super admin).
+  const quota = state?.attachments;
+  const maxMB = quota?.maxMB ?? cfg.attachmentMaxMB;
+  const quotaFull = !!quota && quota.used >= quota.max;
 
   const append = ({ message }: { message: Message }) => {
     qc.setQueryData<{ messages: Message[]; state: ChatState }>(['messages', ticketId], (old) =>
@@ -56,7 +62,11 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
 
   const sendFile = useMutation({
     mutationFn: (file: File) => api.upload<{ message: Message }>(`/tickets/${ticketId}/attachments`, file),
-    onSuccess: append,
+    onSuccess: (r) => {
+      append(r);
+      // Perbarui hitungan kuota lampiran.
+      qc.invalidateQueries({ queryKey: ['messages', ticketId] });
+    },
     onError: (e) => toast.error(errMsg(e)),
   });
 
@@ -66,8 +76,11 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
     if (!ATTACHMENT_TYPES[attachmentExt(file.name)]) {
       return toast.error('Jenis file tidak didukung.', { description: 'Kirim foto, video pendek, atau dokumen (PDF/Word/Excel/PowerPoint/TXT).' });
     }
-    if (file.size > ATTACHMENT_MAX_BYTES) {
-      return toast.error('File terlalu besar.', { description: `Ukuran ${fmtBytes(file.size)}, maksimal 2 MB.` });
+    if (quotaFull) {
+      return toast.error(`Maksimal ${quota!.max} file per sesi chat.`, { description: 'Batas lampiran untuk sesi ini sudah tercapai.' });
+    }
+    if (file.size > maxMB * 1024 * 1024) {
+      return toast.error('File terlalu besar.', { description: `Ukuran ${fmtBytes(file.size)}, maksimal ${maxMB} MB.` });
     }
     sendFile.mutate(file);
   };
@@ -184,9 +197,9 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
             type="button"
             className="btn btn-ghost h-11 w-11 shrink-0 px-0"
             onClick={() => fileRef.current?.click()}
-            disabled={sendFile.isPending}
-            aria-label="Lampirkan foto, video, atau dokumen (maks. 2 MB)"
-            title="Lampirkan foto, video, atau dokumen (maks. 2 MB)"
+            disabled={sendFile.isPending || quotaFull}
+            aria-label={quotaFull ? `Batas ${quota!.max} file per sesi chat sudah tercapai` : `Lampirkan foto, video, atau dokumen (maks. ${maxMB} MB)`}
+            title={quotaFull ? `Batas ${quota!.max} file per sesi chat sudah tercapai` : `Lampirkan foto, video, atau dokumen (maks. ${maxMB} MB${quota ? ` · ${quota.used}/${quota.max} file` : ''})`}
           >
             <Paperclip size={18} />
           </button>

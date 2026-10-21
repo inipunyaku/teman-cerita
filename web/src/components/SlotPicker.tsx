@@ -5,8 +5,9 @@ import { ChevronLeft, ChevronRight, Clock3, Info, Languages, Sparkles, UserRound
 import { api } from '@/lib/api';
 import { addMinutes, fmtYmd, fullPsychName, hmDot, todayWib } from '@/lib/format';
 import type { DaySlot, PsychProfile } from '@/lib/types';
-import { MODE_HINT, MODE_LABEL, MODES, ROOM_PREFIX, type Mode } from '@shared/constants';
+import { MODE_HINT, MODE_LABEL, MODES, type Mode } from '@shared/constants';
 import { Avatar, MODE_ICON, Modal, Sk } from './ui';
+import { gapText, useConfig } from '@/lib/config';
 
 export interface SlotValue {
   psychologistId?: number;
@@ -30,6 +31,7 @@ export function usePsychologists() {
  * `ticketId` dipakai saat mengubah jadwal (slot milik tiket itu sendiri dianggap kosong).
  */
 export function SlotPicker({ value, onChange, ticketId, showErrors }: { value: SlotValue; onChange: (v: SlotValue) => void; ticketId?: number; showErrors?: boolean }) {
+  const cfg = useConfig();
   const q = ticketId ? `&ticket=${ticketId}` : '';
   const [month, setMonth] = useState(() => (value.date ?? todayWib()).slice(0, 7));
   const [filter, setFilter] = useState<number | 0>(0);
@@ -139,7 +141,7 @@ export function SlotPicker({ value, onChange, ticketId, showErrors }: { value: S
         <p className="mt-auto flex gap-2 rounded-2xl bg-sky-50 px-3.5 py-3 text-[12.5px] leading-snug text-sky-800">
           <Info size={15} className="mt-0.5 shrink-0" />
           {monthQ.data?.minDate
-            ? `Tanggal yang dapat dipilih mulai ${fmtYmd(monthQ.data.minDate, 'd MMMM yyyy')} (jeda minimal 2 minggu dari sesi sebelumnya).`
+            ? `Tanggal yang dapat dipilih mulai ${fmtYmd(monthQ.data.minDate, 'd MMMM yyyy')} (jeda minimal ${gapText(cfg.minGapDays)} dari sesi sebelumnya).`
             : 'Tanggal yang dapat dipilih adalah tanggal dengan ketersediaan psikolog.'}
         </p>
       </section>
@@ -194,7 +196,7 @@ export function SlotPicker({ value, onChange, ticketId, showErrors }: { value: S
           <div className={clsx('card animate-rise p-4 sm:p-5', miss.time && 'invalid-card')} {...invalid(miss.time)}>
             <h3 className="font-semibold">Pilih Waktu</h3>
             {miss.time && <p className="err mt-0.5">Pilih salah satu jam.</p>}
-            <p className="text-[13px] text-ink-soft">{fmtYmd(value.date)} · sesi 60 menit</p>
+            <p className="text-[13px] text-ink-soft">{fmtYmd(value.date)} · sesi {cfg.schedule.durationMin} menit</p>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {times.map((t) => (
                 <button
@@ -240,7 +242,7 @@ export function SlotPicker({ value, onChange, ticketId, showErrors }: { value: S
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold">{MODE_LABEL[m]}</span>
-                      <span className="block text-[12px] leading-snug text-ink-soft">{ok ? (m === 'offline' ? ROOM_PREFIX : MODE_HINT[m]) : 'Tidak tersedia di jam ini'}</span>
+                      <span className="block text-[12px] leading-snug text-ink-soft">{ok ? (m === 'offline' ? cfg.roomPrefix : MODE_HINT[m]) : 'Tidak tersedia di jam ini'}</span>
                     </span>
                   </button>
                 );

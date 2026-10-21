@@ -11,6 +11,7 @@ import type { Eligibility, Ticket } from '@/lib/types';
 import { HeroScene } from './HeroScene';
 import windowArt from '@/assets/home/window.svg';
 import cloudArt from '@/assets/home/cloud.svg';
+import { fillInfo, gapText, useConfig } from '@/lib/config';
 
 const PART_ICON = { pagi: Sunrise, siang: Sun, sore: Sunset, malam: Moon } as const;
 
@@ -392,11 +393,12 @@ export function Affirmation({ seed }: { seed: number }) {
 const STEPS = [
   ['Persetujuan & skrining', 'Baca informed consent lalu isi skrining singkat tentang kondisimu.'],
   ['Pilih psikolog & jadwal', 'Lihat slot yang masih tersedia, pilih psikolog, jam, dan media konseling.'],
-  ['Bercerita', 'Sesi 60 menit lewat tatap muka, chat, atau video/voice call Microsoft Teams.'],
+  ['Bercerita', 'Sesi {durasi} menit lewat tatap muka, chat, atau video/voice call Microsoft Teams.'],
   ['Hasil & feedback', 'Lihat hasil dan tindak lanjut dari psikolog, lalu bagikan pengalamanmu.'],
 ];
 
 export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eligibility; joinedAt: string }) {
+  const cfg = useConfig();
   const done = tickets.filter((t) => t.status === 'completed' || t.status === 'awaiting_report');
   const last = [...done].sort((a, b) => (a.scheduledStart < b.scheduledStart ? 1 : -1))[0];
   const quota = el ? Math.min(1, el.yearCount / Math.max(1, el.maxPerYear)) : 0;
@@ -411,12 +413,12 @@ export function Journey({ tickets, el, joinedAt }: { tickets: Ticket[]; el?: Eli
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-50 font-brand text-[16px] font-bold text-brand">{i + 1}</span>
               <div>
                 <p className="text-sm font-semibold">{t}</p>
-                <p className="text-[13.5px] leading-relaxed text-ink-soft">{d}</p>
+                <p className="text-[13.5px] leading-relaxed text-ink-soft">{fillInfo(d, cfg)}</p>
               </div>
             </li>
           ))}
         </ol>
-        {el && <p className="mt-5 border-t border-line pt-4 text-[13px] text-ink-faint">Kuota tahun ini: {el.maxPerYear} sesi · jeda minimal 2 minggu antar sesi.</p>}
+        {el && <p className="mt-5 border-t border-line pt-4 text-[13px] text-ink-faint">Kuota tahun ini: {el.maxPerYear} sesi · jeda minimal {gapText(cfg.minGapDays)} antar sesi.</p>}
       </section>
     );
   }

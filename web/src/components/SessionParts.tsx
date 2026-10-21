@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
@@ -8,7 +8,7 @@ import { api, errMsg } from '@/lib/api';
 import { ageOf, fmtDate, fmtTime } from '@/lib/format';
 import type { Feedback, HistoryItem, Ticket } from '@/lib/types';
 import { Field, ModeTag, Modal, OutcomeChip, ScreeningChip, Spinner, StatusChip } from './ui';
-import { GENDER_LABEL, LIKERT, SATISFACTION_LABEL, SCREENING_ITEMS, type Gender, type SatisfactionLevel } from '@shared/constants';
+import { CASE_CATEGORIES, CLIENT_TOPICS, GENDER_LABEL, LIKERT, SATISFACTION_LABEL, SCREENING_ITEMS, type CaseCategory, type ClientTopic, type Gender, type SatisfactionLevel } from '@shared/constants';
 
 /** Jadwal, media, lokasi/tautan, dan kontak WhatsApp — untuk psikolog & admin. */
 export function ScheduleCard({ t, onChanged }: { t: Ticket; onChanged: () => void }) {
@@ -172,13 +172,18 @@ export function HistoryList({ items, linkBase }: { items: HistoryItem[]; linkBas
               <p className="text-sm font-semibold">{fmtDate(h.scheduledStart, 'd MMM yyyy')} <span className="font-normal text-ink-faint">· {h.code}</span></p>
               <p className="truncate text-[12.5px] text-ink-soft">{h.psychologistName}</p>
             </div>
-            <div className="flex shrink-0 flex-wrap justify-end gap-1">{h.outcome ? <OutcomeChip outcome={h.outcome} /> : <StatusChip status={h.status} />}</div>
+            <div className="flex shrink-0 flex-wrap justify-end gap-1">
+              {h.screeningLevel && <ScreeningChip level={h.screeningLevel} score={h.screeningScore} />}
+              {h.outcome ? <OutcomeChip outcome={h.outcome} /> : <StatusChip status={h.status} />}
+            </div>
           </>
         );
         return (
           <li key={h.id}>
             {linkBase ? (
               <Link to={`${linkBase}/${h.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-sky-700">{body}</Link>
+            ) : h.screeningLevel || h.report ? (
+              <HistoryDetail h={h}>{body}</HistoryDetail>
             ) : (
               <div className="flex items-center justify-between gap-3 py-2.5">{body}</div>
             )}
@@ -186,5 +191,65 @@ export function HistoryList({ items, linkBase }: { items: HistoryItem[]; linkBas
         );
       })}
     </ul>
+  );
+}
+
+/** Untuk psikolog: buka sesi sebelumnya (oleh psikolog mana pun) untuk melihat skrining & catatan hasilnya. */
+function HistoryDetail({ h, children }: { h: HistoryItem; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const r = h.report;
+  const notes = r
+    ? ([
+        ['Tujuan konseling', r.goal],
+        ['Riwayat kesehatan', r.healthHistory],
+        ['Gejala', r.symptoms],
+        ['Ringkasan sesi', r.summary],
+        ['Catatan untuk klien', r.noteForClient],
+      ] as [string, string | null][]).filter(([, v]) => v)
+    : [];
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 py-2.5 text-left hover:text-sky-700">
+        {children}
+        <ChevronDown size={16} className={clsx('shrink-0 text-ink-faint transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="mb-3 space-y-3 rounded-2xl bg-canvas px-4 py-3 text-[13.5px]">
+          <p className="text-[12.5px] text-ink-faint">
+            {CLIENT_TOPICS[h.topic as ClientTopic] ?? h.topic}
+            {r?.category && ` · ${CASE_CATEGORIES[r.category as CaseCategory]?.label ?? r.category}`}
+          </p>
+          {h.screening && h.screening.length === SCREENING_ITEMS.length && (
+            <div>
+              <p className="eyebrow">Skrining EANSCALE · skor {h.screeningScore}</p>
+              <ol className="mt-1.5 grid gap-1 sm:grid-cols-2">
+                {SCREENING_ITEMS.map((item, i) => {
+                  const v = h.screening![i];
+                  const distress = item.favorable ? 5 - v : v;
+                  return (
+                    <li key={i} className="flex items-start justify-between gap-2 text-[12.5px]">
+                      <span className="text-ink-soft"><span className="text-ink-faint">{i + 1}.</span> {item.text}</span>
+                      <span className={clsx('shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-semibold', distress >= 3 ? 'bg-coral-50 text-coral-700' : 'bg-white text-ink-soft')}>{LIKERT[v - 1]}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+          {notes.length > 0 ? (
+            <dl className="space-y-2.5">
+              {notes.map(([k, v]) => (
+                <div key={k}>
+                  <dt className="eyebrow">{k}</dt>
+                  <dd className="mt-0.5 whitespace-pre-wrap leading-relaxed text-ink">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-ink-faint">{r ? 'Tidak ada catatan klinis (mis. klien tidak hadir).' : 'Hasil sesi belum diisi psikolog.'}</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

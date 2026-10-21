@@ -133,6 +133,8 @@ export interface ChatState {
   canSend: boolean;
   reason: string | null;
   closesAt?: string;
+  /** Kuota lampiran per sesi chat. */
+  attachments?: { used: number; max: number; maxMB: number };
 }
 
 export interface HistoryItem {
@@ -143,6 +145,20 @@ export interface HistoryItem {
   mode: Mode;
   psychologistName: string;
   outcome: Outcome | null;
+  /** Hanya untuk psikolog: konteks klinis sesi sebelumnya (termasuk dari psikolog lain). */
+  topic?: string;
+  screening?: number[];
+  screeningScore?: number;
+  screeningLevel?: string;
+  report?: {
+    outcome: Outcome;
+    goal: string | null;
+    healthHistory: string | null;
+    symptoms: string | null;
+    summary: string | null;
+    category: string | null;
+    noteForClient: string | null;
+  };
 }
 
 export interface TicketDetail {

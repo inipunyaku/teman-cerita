@@ -113,7 +113,7 @@ export default function SessionDetail() {
           </Card>
 
           {report && (
-            <Card title="Hasil sesi" aside={<span className="text-[12.5px] text-ink-faint">Rahasia · hanya kamu yang bisa membaca</span>}>
+            <Card title="Hasil sesi" aside={<span className="text-[12.5px] text-ink-faint">Rahasia · hanya psikolog Teman Cerita</span>}>
               <div className="flex flex-wrap items-center gap-2">
                 <OutcomeChip outcome={report.outcome} />
                 {report.category && <span className="chip bg-canvas text-ink-soft ring-1 ring-line">{CASE_CATEGORIES[report.category as CaseCategory]?.label}</span>}
@@ -144,7 +144,7 @@ export default function SessionDetail() {
 
           <Card title="Data diri klien"><ClientFacts t={t} /></Card>
 
-          <Card title="Riwayat konseling klien"><HistoryList items={history} /></Card>
+          <Card title="Riwayat konseling klien" aside={history.length > 0 ? <span className="text-[12.5px] text-ink-faint">Klik untuk melihat skrining & catatan</span> : undefined}><HistoryList items={history} /></Card>
 
           <Card title="Linimasa"><Timeline events={events} /></Card>
         </div>
@@ -211,7 +211,7 @@ function ReportModal({ ticketId, initial, onClose, onDone }: { ticketId: number;
       onClose={onClose}
       size="lg"
       title="Form pasca-sesi"
-      description="Isi hasil sesi. Detail klinis hanya bisa dibaca olehmu; admin hanya melihat rencana tindak lanjut dan kategori untuk laporan agregat."
+      description="Isi hasil sesi. Detail klinis bisa dibaca psikolog Teman Cerita yang menangani klien ini (untuk kesinambungan pendampingan); admin hanya melihat rencana tindak lanjut dan kategori untuk laporan agregat."
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>Nanti dulu</button>

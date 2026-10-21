@@ -10,6 +10,7 @@ import type { Eligibility, Ticket } from '@/lib/types';
 import { HomeSkeleton } from '@/components/Skeletons';
 import { RegistrationCard } from './Registrations';
 import { Affirmation, GreetingHero, Journey, MoodCheckin, SelfCare } from './HomeParts';
+import { gapText, useConfig } from '@/lib/config';
 
 /** "hari ini" / "besok" / "pada Senin, 2 Nov" — enak dibaca di tengah kalimat. */
 function sessionDay(iso: string) {
@@ -31,6 +32,7 @@ function NoticeCard({ to, title, children }: { to: string; title: string; childr
 }
 
 export default function Home() {
+  const cfg = useConfig();
   const { user } = useAuth();
   const u = user!;
   const { data, isLoading } = useQuery({ queryKey: ['tickets', 'mine'], queryFn: () => api.get<{ tickets: Ticket[] }>('/tickets') });
@@ -78,7 +80,7 @@ export default function Home() {
             </Link>
             {el.earliestDate && (
               <p className="mt-3 text-[13px] text-ink-soft">
-                Jadwal bisa dipilih mulai {fmtYmd(el.earliestDate, 'd MMMM yyyy')} (jeda 2 minggu dari sesi sebelumnya).
+                Jadwal bisa dipilih mulai {fmtYmd(el.earliestDate, 'd MMMM yyyy')} (jeda {gapText(cfg.minGapDays)} dari sesi sebelumnya).
               </p>
             )}
           </>

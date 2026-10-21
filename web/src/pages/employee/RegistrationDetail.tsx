@@ -28,9 +28,11 @@ import { Avatar, Field, MODE_ICON, Modal, Spinner, StatusChip } from '@/componen
 import { DetailSkeleton } from '@/components/Skeletons';
 import { ChatPanel } from '@/components/ChatPanel';
 import { SlotPicker, type SlotValue } from '@/components/SlotPicker';
-import { CLIENT_TOPICS, FEEDBACK_ITEMS, MODE_LABEL, RESULT_TEXT, SCHEDULE, type ClientTopic } from '@shared/constants';
+import { CLIENT_TOPICS, FEEDBACK_ITEMS, MODE_LABEL, RESULT_TEXT, type ClientTopic } from '@shared/constants';
+import { fillInfo, useConfig } from '@/lib/config';
 
 export default function RegistrationDetail() {
+  const cfg = useConfig();
   const { id } = useParams();
   const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({ queryKey: ['ticket', Number(id)], queryFn: () => api.get<Detail>(`/tickets/${id}`) });
@@ -45,7 +47,7 @@ export default function RegistrationDetail() {
   if (error || !data) return <p className="py-10 text-center text-ink-soft">{errMsg(error)}</p>;
   const { ticket: t, report, feedback, chat } = data;
   const Icon = MODE_ICON[t.mode];
-  const editable = t.status === 'scheduled' && Date.parse(t.scheduledStart) - Date.now() >= SCHEDULE.leadHours * 3600e3;
+  const editable = t.status === 'scheduled' && Date.parse(t.scheduledStart) - Date.now() >= cfg.schedule.leadHours * 3600e3;
   const past = ['awaiting_report', 'completed', 'no_show'].includes(t.status);
   const showChat = chat.canRead;
 
@@ -101,13 +103,13 @@ export default function RegistrationDetail() {
               <>
                 <p className="mt-5 flex gap-2 rounded-2xl bg-sky-50 px-4 py-3 text-[13px] leading-relaxed text-sky-800">
                   <Info size={16} className="mt-0.5 shrink-0" />
-                  Toleransi keterlambatan maksimal 15 menit. Perubahan jadwal atau pembatalan paling lambat H-4 jam sebelum sesi.
+                  Toleransi keterlambatan maksimal {cfg.lateToleranceMin} menit. Perubahan jadwal atau pembatalan paling lambat H-{cfg.schedule.leadHours} jam sebelum sesi.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button className="btn btn-secondary" disabled={!editable} onClick={() => setModal('reschedule')}><CalendarClock size={17} /> Ubah jadwal</button>
                   <button className="btn btn-ghost text-coral-700 hover:bg-coral-50 hover:text-coral-700" disabled={!editable} onClick={() => setModal('cancel')}><CalendarX2 size={17} /> Batalkan</button>
                 </div>
-                {!editable && <p className="mt-2 text-[12.5px] text-ink-faint">Sudah kurang dari 4 jam sebelum sesi. Hubungi admin bila ada kendala mendesak.</p>}
+                {!editable && <p className="mt-2 text-[12.5px] text-ink-faint">Sudah kurang dari {cfg.schedule.leadHours} jam sebelum sesi. Hubungi admin bila ada kendala mendesak.</p>}
               </>
             )}
           </Section>
@@ -199,6 +201,7 @@ function Item({ icon, label, children }: { icon: ReactNode; label: string; child
 
 /** Teks hasil sesuai outcome yang dipilih psikolog. */
 export function ResultBody({ report }: { report: Report | null }) {
+  const cfg = useConfig();
   const { data: el } = useQuery({ queryKey: ['booking', 'eligibility'], queryFn: () => api.get<Eligibility>('/booking/eligibility') });
   if (!report) {
     return (
@@ -219,13 +222,13 @@ export function ResultBody({ report }: { report: Report | null }) {
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-mint-50 text-mint-700"><Sprout size={24} /></span>
           <div>
             <p className="font-semibold leading-snug">{text.title}</p>
-            <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink-soft">{text.body}</p>
+            <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink-soft">{fillInfo(text.body, cfg)}</p>
           </div>
         </div>
         {'next' in text && (
           <div className="ml-16 mt-4 border-t border-sky-200/60 pt-4">
             <p className="font-semibold">{text.nextTitle}</p>
-            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink-soft">{text.next}</p>
+            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink-soft">{fillInfo(text.next, cfg)}</p>
             {report.outcome === 'lanjutan' && (
               el?.canBook ? (
                 <Link to="/buat-janji" className="btn btn-primary mt-3">Pilih Jadwal Sesi Lanjutan</Link>

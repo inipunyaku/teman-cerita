@@ -117,13 +117,13 @@ export const RESULT_TEXT = {
     title: 'Terima kasih sudah menjadikan Teman Cerita BRILiaN sebagai ruang untuk bercerita. 💙',
     body: 'Sesi konseling kamu telah selesai. Semoga sesi ini dapat memberikan perspektif dan langkah baru dalam menghadapi hal-hal yang sedang kamu jalani.\n\nJangan lupa untuk tetap memberikan waktu dan perhatian untuk dirimu sendiri. 🌱',
     nextTitle: 'Ingin kembali bercerita?',
-    next: 'Kamu dapat mengikuti sesi konseling kembali setelah jeda minimal 2 minggu dari sesi sebelumnya. Sampai saat itu, tetap jaga diri dan jangan ragu untuk memberikan ruang bagi dirimu sendiri.',
+    next: 'Kamu dapat mengikuti sesi konseling kembali setelah jeda minimal {jeda} dari sesi sebelumnya. Sampai saat itu, tetap jaga diri dan jangan ragu untuk memberikan ruang bagi dirimu sendiri.',
   },
   lanjutan: {
     title: 'Terima kasih sudah menjadikan Teman Cerita BRILiaN sebagai ruang untuk bercerita. 💙',
     body: 'Berdasarkan sesi hari ini, psikolog merekomendasikan sesi lanjutan untuk melanjutkan proses konseling dan membahas hal-hal yang masih perlu kamu eksplorasi bersama.',
     nextTitle: 'Ingin melanjutkan ceritamu?',
-    next: 'Kamu dapat mengikuti sesi konseling lanjutan setelah jeda minimal 2 minggu dari sesi sebelumnya. Pilih jadwal yang sesuai ketika kamu siap untuk melanjutkan prosesnya.\n\nSampai saat itu, tetap jaga diri dan berikan ruang untuk dirimu sendiri. 🌱',
+    next: 'Kamu dapat mengikuti sesi konseling lanjutan setelah jeda minimal {jeda} dari sesi sebelumnya. Pilih jadwal yang sesuai ketika kamu siap untuk melanjutkan prosesnya.\n\nSampai saat itu, tetap jaga diri dan berikan ruang untuk dirimu sendiri. 🌱',
   },
   referral: {
     title: 'Terima kasih sudah menjadikan Teman Cerita BRILiaN sebagai ruang untuk bercerita. 💙',
@@ -133,7 +133,7 @@ export const RESULT_TEXT = {
   },
   no_show: {
     title: 'Kamu tercatat tidak hadir pada sesi ini',
-    body: 'Sesi melewati batas toleransi keterlambatan 15 menit sehingga dinyatakan hangus. Tidak apa-apa — kalau kamu masih butuh teman cerita, kamu bisa membuat janji baru setelah jeda minimal 2 minggu.',
+    body: 'Sesi melewati batas toleransi keterlambatan {toleransi} menit sehingga dinyatakan hangus. Tidak apa-apa — kalau kamu masih butuh teman cerita, kamu bisa membuat janji baru setelah jeda minimal 2 minggu.',
   },
 } as const;
 
@@ -146,7 +146,7 @@ export const CONSENT_INTRO =
 export const CONSENT_SECTIONS: { title: string; body: string }[] = [
   {
     title: 'Proses Konseling',
-    body: 'Teman Cerita BRILiaN merupakan layanan konseling individual selama 60 menit bersama psikolog profesional bagi Pekerja BRI untuk memperoleh dukungan psikologis terkait pekerjaan maupun kehidupan pribadi agar pekerja dapat menjaga kesehatan mental serta mengoptimalkan produktivitas. Konseling dilakukan untuk memahami concerns, mengeksplorasi kondisi yang dihadapi, dan mengembangkan strategi dengan topik meliputi work stress management, emotional resilience, personal growth, dan interpersonal relationship, maupun topik lainnya sesuai dengan kebutuhan klien.',
+    body: 'Teman Cerita BRILiaN merupakan layanan konseling individual selama {durasi} menit bersama psikolog profesional bagi Pekerja BRI untuk memperoleh dukungan psikologis terkait pekerjaan maupun kehidupan pribadi agar pekerja dapat menjaga kesehatan mental serta mengoptimalkan produktivitas. Konseling dilakukan untuk memahami concerns, mengeksplorasi kondisi yang dihadapi, dan mengembangkan strategi dengan topik meliputi work stress management, emotional resilience, personal growth, dan interpersonal relationship, maupun topik lainnya sesuai dengan kebutuhan klien.',
   },
   {
     title: 'Kerahasiaan',
@@ -162,7 +162,7 @@ export const CONSENT_SECTIONS: { title: string; body: string }[] = [
   },
   {
     title: 'Ketentuan Layanan',
-    body: 'Sesi berlangsung selama 60 menit dengan toleransi keterlambatan maksimal 15 menit, melebihi batas tersebut maka mohon maaf sesi akan hangus. Perubahan jadwal atau pembatalan diharapkan dilakukan paling lambat H-4 Jam dari penjadwalan yang sudah dibuat. Teman Cerita BRILiaN tidak diperuntukkan sebagai sarana pengaduan maupun konsultasi terkait jenjang karier.',
+    body: 'Sesi berlangsung selama {durasi} menit dengan toleransi keterlambatan maksimal {toleransi} menit, melebihi batas tersebut maka mohon maaf sesi akan hangus. Perubahan jadwal atau pembatalan diharapkan dilakukan paling lambat H-{lead} jam dari penjadwalan yang sudah dibuat. Teman Cerita BRILiaN tidak diperuntukkan sebagai sarana pengaduan maupun konsultasi terkait jenjang karier.',
   },
 ];
 

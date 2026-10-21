@@ -393,3 +393,15 @@
     display: none !important;
   }
 }
+
+/*
+ * iPhone/iPad: Safari otomatis memperbesar layar saat kolom isian berhuruf < 16px difokus. Di perangkat sentuh
+ * semua kolom isian dipaksa minimal 16px supaya tidak ada auto-zoom (pinch-zoom manual tetap bisa).
+ */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

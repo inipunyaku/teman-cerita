@@ -32,6 +32,7 @@ import {
   type Role,
   type TicketStatus,
 } from '../../shared/constants.js';
+import { SERVICE_CONFIG } from '../serviceConfig.js';
 
 export const ticketsRouter = Router();
 
@@ -320,16 +321,39 @@ ticketsRouter.get('/:id', requireVerified, (req, res) => {
     : null;
 
   // Riwayat sesi klien yang sama (tanpa isi laporan) untuk konteks psikolog & admin.
-  const history =
+  // Riwayat sesi klien yang sama. Psikolog (siapa pun yang menangani klien ini) juga melihat skrining &
+  // catatan hasil sesi sebelumnya supaya pendampingan berkelanjutan; admin hanya metadata.
+  type HistoryRow = {
+    id: number; code: string; status: string; scheduledStart: string; mode: string; psychologistName: string; outcome: string | null;
+    topic: string; screening: string; screeningScore: number; screeningLevel: string;
+    goal: string | null; healthHistory: string | null; symptoms: string | null; summary: string | null; category: string | null; noteForClient: string | null;
+  };
+  const historyRows =
     viewer.role === 'employee'
       ? []
-      : db
+      : (db
           .prepare(
-            `SELECT t.id, t.code, t.status, t.scheduled_start AS scheduledStart, t.mode, p.name AS psychologistName, r.outcome
+            `SELECT t.id, t.code, t.status, t.scheduled_start AS scheduledStart, t.mode, p.name AS psychologistName, r.outcome,
+                    t.topic, t.screening, t.screening_score AS screeningScore, t.screening_level AS screeningLevel,
+                    r.goal, r.health_history AS healthHistory, r.symptoms, r.summary, r.category, r.note_for_client AS noteForClient
              FROM tickets t JOIN users p ON p.id = t.psychologist_id LEFT JOIN reports r ON r.ticket_id = t.id
              WHERE t.employee_id = ? AND t.id != ? ORDER BY t.scheduled_start DESC LIMIT 20`,
           )
-          .all(t.employee_id, t.id);
+          .all(t.employee_id, t.id) as HistoryRow[]);
+  const history = historyRows.map((h) => {
+    const base = { id: h.id, code: h.code, status: h.status, scheduledStart: h.scheduledStart, mode: h.mode, psychologistName: h.psychologistName, outcome: h.outcome };
+    if (viewer.role !== 'psychologist') return base;
+    return {
+      ...base,
+      topic: h.topic,
+      screening: JSON.parse(h.screening) as number[],
+      screeningScore: h.screeningScore,
+      screeningLevel: h.screeningLevel,
+      report: h.outcome
+        ? { outcome: h.outcome, goal: h.goal, healthHistory: h.healthHistory, symptoms: h.symptoms, summary: h.summary, category: h.category, noteForClient: h.noteForClient }
+        : undefined,
+    };
+  });
 
   res.json({
     ticket: serialize(t, viewer),
@@ -598,7 +622,20 @@ ticketsRouter.post('/:id/report', requireRole('psychologist'), (req, res) => {
 
 const hasMessages = db.prepare('SELECT 1 FROM messages WHERE ticket_id = ? LIMIT 1');
 
+const attachmentCount = db.prepare('SELECT COUNT(*) n FROM messages WHERE ticket_id = ? AND file_path IS NOT NULL');
+
+/** Status ruang chat + kuota lampiran per sesi chat. */
 function chatState(t: TicketRow) {
+  const st: { canRead: boolean; canSend: boolean; reason: string | null; closesAt?: string; attachments?: { used: number; max: number; maxMB: number } } =
+    chatAvailability(t);
+  if (st.canRead) {
+    const { n } = attachmentCount.get(t.id) as { n: number };
+    st.attachments = { used: n, max: SERVICE_CONFIG.attachmentsPerTicket, maxMB: SERVICE_CONFIG.attachmentMaxMB };
+  }
+  return st;
+}
+
+function chatAvailability(t: TicketRow): { canRead: boolean; canSend: boolean; reason: string | null; closesAt?: string } {
   // Ruang chat hanya untuk sesi bermedia chat. Riwayat lama (mis. sebelum media diganti) tetap bisa dibaca.
   if (t.mode !== 'chat') {
     return { canRead: !!hasMessages.get(t.id), canSend: false, reason: 'Chat hanya tersedia untuk sesi dengan media Chat.' };
@@ -691,6 +728,9 @@ ticketsRouter.post('/:id/attachments', requireVerified, (req, res, next) => {
   const t = chatAccess(req);
   const state = chatState(t);
   if (!state.canSend) fail(400, state.reason ?? 'Chat tidak tersedia.');
+  if (state.attachments && state.attachments.used >= state.attachments.max) {
+    fail(400, `Maksimal ${state.attachments.max} file per sesi chat. Batas ini sudah tercapai.`, 'ATTACHMENT_LIMIT');
+  }
   if (Number(req.headers['content-length'] ?? 0) > ATTACHMENT_MAX_BYTES) fail(413, 'Ukuran file maksimal 2 MB.');
   rawUpload(req, res, (err?: unknown) => {
     if (err) return next((err as { type?: string }).type === 'entity.too.large' ? new HttpError(413, 'Ukuran file maksimal 2 MB.') : err);

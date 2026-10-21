@@ -10,7 +10,8 @@ import { useAuth } from '@/lib/auth';
 import { fmtYmd, hmDot, todayWib } from '@/lib/format';
 import type { AvailabilityBlock, AvailabilitySession, Psychologist } from '@/lib/types';
 import { Field, MODE_ICON, Modal, PageHeader, Sk, Spinner, StatusChip } from '@/components/ui';
-import { MODE_LABEL, MODES, SCHEDULE, TIME_OPTIONS, toMin, weekday, type Mode } from '@shared/constants';
+import { MODE_LABEL, MODES, toMin, weekday, type Mode } from '@shared/constants';
+import { breaksText, timeOptions, useConfig } from '@/lib/config';
 
 const DAY_SHORT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const addDays = (date: string, n: number) => new Date(Date.parse(`${date}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
@@ -18,6 +19,7 @@ const mondayOf = (date: string) => addDays(date, -((weekday(date) + 6) % 7));
 
 /** Kelola blok ketersediaan psikolog. Psikolog untuk dirinya sendiri; admin memilih psikolog. */
 export default function Availability() {
+  const cfg = useConfig();
   const { user } = useAuth();
   const admin = user!.role === 'admin';
   const qc = useQueryClient();
@@ -34,7 +36,8 @@ export default function Availability() {
     if (admin && !pid && activePsychs.length) setPid(activePsychs[0].id);
   }, [admin, pid, activePsychs.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const days = Array.from({ length: 5 }, (_, i) => addDays(week, i));
+  // Kolom = hari layanan dalam minggu ini (pengaturan super admin).
+  const days = Array.from({ length: 7 }, (_, i) => addDays(week, i)).filter((d) => cfg.schedule.workDays.includes(weekday(d)));
   const target = admin ? pid : user!.id;
   const { data, isLoading } = useQuery({
     queryKey: ['availability', target, week],
@@ -80,7 +83,7 @@ export default function Availability() {
         )}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-3 md:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ '--cols': Math.max(1, days.length) } as React.CSSProperties}>
         {days.map((d) => {
           const blocks = (data?.blocks ?? []).filter((b) => b.date === d);
           const sessions = (data?.sessions ?? []).filter((s) => s.date === d);
@@ -143,7 +146,7 @@ export default function Availability() {
                 </button>
               )}
               {sessions.filter((s) => s.status !== 'cancelled').length > 0 && (
-                <p className="mt-1 text-center text-[11.5px] text-ink-faint">{sessions.length}/{SCHEDULE.maxPerPsychPerDay} sesi</p>
+                <p className="mt-1 text-center text-[11.5px] text-ink-faint">{sessions.length}/{cfg.schedule.maxPerPsychPerDay} sesi</p>
               )}
             </section>
           );
@@ -152,7 +155,7 @@ export default function Availability() {
 
       <p className="mt-4 flex gap-2 text-[12.5px] text-ink-faint">
         <Info size={14} className="mt-0.5 shrink-0" />
-        Jam operasional {hmDot(SCHEDULE.open)}–{hmDot(SCHEDULE.close)} WIB. Istirahat Senin–Kamis 12.00–13.00 dan Jumat 11.30–13.30. Maksimal {SCHEDULE.maxPerPsychPerDay} sesi per hari dengan jeda 30 menit antarsesi.
+        Jam operasional {hmDot(cfg.schedule.open)}–{hmDot(cfg.schedule.close)} WIB.{breaksText(cfg) && ` Istirahat ${breaksText(cfg)}.`} Maksimal {cfg.schedule.maxPerPsychPerDay} sesi per hari dengan jeda {cfg.schedule.gapMin} menit antarsesi.
       </p>
 
       {adding && target > 0 && <AddModal start={adding} psychologistId={admin ? target : undefined} onClose={() => setAdding(null)} />}
@@ -167,9 +170,10 @@ const PRESETS: [string, string, string][] = [
 ];
 
 function AddModal({ start, psychologistId, onClose }: { start: string; psychologistId?: number; onClose: () => void }) {
+  const cfg = useConfig();
   const qc = useQueryClient();
   const [from, setFrom] = useState(start);
-  const [days, setDays] = useState<number[]>([weekday(start)].filter((d) => d >= 1 && d <= 5));
+  const [days, setDays] = useState<number[]>([weekday(start)].filter((d) => cfg.schedule.workDays.includes(d)));
   const [weeks, setWeeks] = useState(1);
   const [time, setTime] = useState({ start: '08:00', end: '12:00' });
   const [modes, setModes] = useState<Mode[]>([...MODES]);
@@ -180,14 +184,14 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
     const monday = mondayOf(from);
     for (let w = 0; w < weeks; w++) {
       for (const d of days) {
-        const date = addDays(monday, w * 7 + (d - 1));
+        const date = addDays(monday, w * 7 + ((d + 6) % 7));
         if (date >= from && date >= today) out.push(date);
       }
     }
     return out.sort();
   }, [from, days, weeks, today]);
 
-  const short = toMin(time.end) - toMin(time.start) < 60;
+  const short = toMin(time.end) - toMin(time.start) < cfg.schedule.durationMin;
   const valid = dates.length > 0 && modes.length > 0 && !short;
   // Bagian yang belum lengkap ditandai merah setelah pengguna menekan Simpan.
   const [tried, setTried] = useState(false);
@@ -208,7 +212,7 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
       onClose={onClose}
       size="lg"
       title="Tambah ketersediaan"
-      description="Buka rentang waktu yang bisa dipesan pekerja. Satu sesi = 60 menit."
+      description={`Buka rentang waktu yang bisa dipesan pekerja. Satu sesi = ${cfg.schedule.durationMin} menit.`}
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>Batal</button>
@@ -230,7 +234,7 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
         <div data-invalid={miss.days ? '' : undefined}>
           <p className="label">Hari</p>
           <div className={clsx('flex flex-wrap gap-1.5', miss.days && 'invalid-group')}>
-            {[1, 2, 3, 4, 5].map((d) => (
+            {cfg.schedule.workDays.map((d) => (
               <button
                 key={d}
                 type="button"
@@ -255,13 +259,13 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
           </div>
           <div className="grid grid-cols-2 gap-2">
             <select className="input" value={time.start} onChange={(e) => setTime({ ...time, start: e.target.value })} aria-label="Jam mulai">
-              {TIME_OPTIONS.slice(0, -2).map((t) => <option key={t} value={t}>{hmDot(t)}</option>)}
+              {timeOptions(cfg).slice(0, -2).map((t) => <option key={t} value={t}>{hmDot(t)}</option>)}
             </select>
             <select className="input" value={time.end} onChange={(e) => setTime({ ...time, end: e.target.value })} aria-label="Jam selesai">
-              {TIME_OPTIONS.slice(2).map((t) => <option key={t} value={t}>{hmDot(t)}</option>)}
+              {timeOptions(cfg).slice(2).map((t) => <option key={t} value={t}>{hmDot(t)}</option>)}
             </select>
           </div>
-          {short && <p className="err">Rentang minimal 60 menit.</p>}
+          {short && <p className="err">Rentang minimal {cfg.schedule.durationMin} menit.</p>}
           <p className="hint">Jam istirahat otomatis tidak bisa dipesan walau berada di dalam rentang ini.</p>
         </div>
         <div data-invalid={miss.modes ? '' : undefined}>
