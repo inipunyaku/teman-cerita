@@ -158,6 +158,8 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_ticket ON messages(ticket_id, id);
+-- Jumlah pesan belum dibaca per sesi (daftar sesi) tanpa memeriksa semua pesan.
+CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(ticket_id, read_at, sender_id);
 
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY,
@@ -194,6 +196,7 @@ CREATE TABLE IF NOT EXISTS support_messages (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON support_messages(thread_id, id);
+CREATE INDEX IF NOT EXISTS idx_support_unread ON support_messages(thread_id, from_admin, read_at);
 
 -- Pengaturan yang bisa diubah admin (nilai JSON per kunci).
 CREATE TABLE IF NOT EXISTS app_settings (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type UIEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Check, CheckCheck, Download, FileText, Lock, Paperclip, SendHorizontal } from 'lucide-react';
@@ -15,6 +15,10 @@ import { useConfig } from '@/lib/config';
 const ACCEPT = Object.keys(ATTACHMENT_TYPES)
   .map((ext) => `.${ext}`)
   .join(',');
+
+/** Satu halaman chat: pesan urut lama → baru; hasMore = masih ada pesan yang lebih lama di server. */
+type ChatPage = { messages: Message[]; state: ChatState; hasMore?: boolean };
+const PAGE = 100;
 
 interface Props {
   ticketId: number;
@@ -34,16 +38,46 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Hanya pesan terbaru yang dimuat; pesan lama dimuat saat digulir ke atas. Saat dimuat ulang (mis. setelah
+  // kirim file), pesan lama yang sudah terbuka tetap dipertahankan.
   const { data, isLoading } = useQuery({
     queryKey: ['messages', ticketId],
-    queryFn: () => api.get<{ messages: Message[]; state: ChatState }>(`/tickets/${ticketId}/messages`),
+    queryFn: async () => {
+      const r = await api.get<ChatPage>(`/tickets/${ticketId}/messages?limit=${PAGE}`);
+      const old = qc.getQueryData<ChatPage>(['messages', ticketId]);
+      const firstNew = r.messages[0]?.id;
+      const older = old && firstNew ? old.messages.filter((m) => m.id < firstNew) : [];
+      return older.length ? { ...r, messages: [...older, ...r.messages], hasMore: old!.hasMore } : r;
+    },
   });
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const keepScroll = useRef<number | null>(null);
   const messages = data?.messages ?? [];
   const state = data?.state;
   // Kuota lampiran per sesi chat & ukuran maksimal per file (pengaturan super admin).
   const quota = state?.attachments;
   const maxMB = quota?.maxMB ?? cfg.attachmentMaxMB;
   const quotaFull = !!quota && quota.used >= quota.max;
+
+  const loadOlder = async () => {
+    if (!data?.hasMore || loadingOlder || !messages.length) return;
+    setLoadingOlder(true);
+    try {
+      const r = await api.get<ChatPage>(`/tickets/${ticketId}/messages?before=${messages[0].id}&limit=${PAGE}`);
+      const el = listRef.current;
+      keepScroll.current = el ? el.scrollHeight - el.scrollTop : null;
+      qc.setQueryData<ChatPage>(['messages', ticketId], (old) =>
+        old ? { ...old, messages: [...r.messages.filter((m) => !old.messages.some((x) => x.id === m.id)), ...old.messages], hasMore: r.hasMore } : old,
+      );
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+  const onScroll = (e: UIEvent<HTMLDivElement>) => {
+    if (e.currentTarget.scrollTop < 80) void loadOlder();
+  };
 
   const append = ({ message }: { message: Message }) => {
     qc.setQueryData<{ messages: Message[]; state: ChatState }>(['messages', ticketId], (old) =>
@@ -98,9 +132,20 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
       .catch(() => {});
   }, [lastOther, ticketId, qc]);
 
+  // Pesan lama ditambahkan di atas: pertahankan posisi baca.
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (el && keepScroll.current != null) {
+      el.scrollTop = el.scrollHeight - keepScroll.current;
+      keepScroll.current = null;
+    }
+  }, [messages.length]);
+  // Pesan baru di bawah (atau saat pertama dibuka): gulir ke pesan terakhir.
+  const lastId = messages[messages.length - 1]?.id;
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: messages.length > 30 ? 'auto' : 'smooth' });
-  }, [messages.length, sendFile.isPending]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastId, sendFile.isPending]);
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
@@ -133,9 +178,17 @@ export function ChatPanel({ ticketId, otherName, otherAvatar, otherTone, otherSu
 
       <div
         ref={listRef}
+        onScroll={onScroll}
         className="scrollbar-thin min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-[linear-gradient(180deg,#F7FAFC,#fff_40%)] px-3 py-4 sm:px-5"
         aria-live="polite"
       >
+        {data?.hasMore && (
+          <div className="mb-2 flex justify-center">
+            <button type="button" className="btn btn-ghost btn-sm text-[12.5px]" onClick={() => void loadOlder()} disabled={loadingOlder}>
+              {loadingOlder ? <Spinner className="h-3.5 w-3.5" /> : null} Muat pesan sebelumnya
+            </button>
+          </div>
+        )}
         {isLoading ? (
           <ChatSkeleton />
         ) : messages.length === 0 ? (

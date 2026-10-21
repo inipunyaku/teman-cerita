@@ -687,8 +687,15 @@ const MESSAGE_COLS = 'id, sender_id AS senderId, body, read_at AS readAt, create
 ticketsRouter.get('/:id/messages', requireVerified, (req, res) => {
   const t = chatAccess(req);
   const state = chatState(t);
-  const rows = db.prepare(`SELECT ${MESSAGE_COLS} FROM messages WHERE ticket_id = ? ORDER BY id`).all(t.id) as MessageRow[];
-  res.json({ messages: rows.map((m) => serializeMessage(t.id, m)), state });
+  // Dimuat bertahap: `limit` pesan terbaru (default 100, maks. 200); ?before=<id> untuk pesan yang lebih lama.
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 100));
+  const before = Number(req.query.before) || 0;
+  const rows = db
+    .prepare(`SELECT ${MESSAGE_COLS} FROM messages WHERE ticket_id = ? ${before ? 'AND id < ?' : ''} ORDER BY id DESC LIMIT ?`)
+    .all(...(before ? [t.id, before, limit + 1] : [t.id, limit + 1])) as MessageRow[];
+  const hasMore = rows.length > limit;
+  const page = rows.slice(0, limit).reverse(); // urut lama → baru
+  res.json({ messages: page.map((m) => serializeMessage(t.id, m)), hasMore, state });
 });
 
 const chatNoticeExists = db.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND type = 'chat.message' AND link = ? AND read_at IS NULL`);
