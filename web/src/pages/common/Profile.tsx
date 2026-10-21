@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { Camera, LogOut, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { useAuth } from '@/lib/auth';
 import { fmtDate } from '@/lib/format';
 import type { User } from '@/lib/types';
@@ -43,6 +44,15 @@ export default function Profile() {
   const [tone, setTone] = useState(u.avatarTone ?? 'sky');
   const [statusText, setStatusText] = useState(u.statusText ?? '');
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
+  // Isian wajib yang kosong/salah ditandai merah setelah pengguna menekan Simpan.
+  const [triedProfile, setTriedProfile] = useState(false);
+  const [triedPw, setTriedPw] = useState(false);
+  const nameErr = triedProfile && !form.name.trim() ? 'Nama lengkap wajib diisi.' : undefined;
+  const pwErr = {
+    current: triedPw && !pw.current ? 'Isi password lamamu.' : undefined,
+    next: triedPw && pw.next.length < 8 ? 'Password baru minimal 8 karakter.' : undefined,
+    confirm: triedPw && (!pw.confirm || pw.confirm !== pw.next) ? 'Ulangi password baru dengan sama persis.' : undefined,
+  };
 
   const save = useMutation({
     mutationFn: (extra: { avatarTone?: string; statusText?: string } = {}) =>
@@ -79,6 +89,7 @@ export default function Profile() {
     mutationFn: () => api.post('/auth/password', { current: pw.current, next: pw.next }),
     onSuccess: () => {
       setPw({ current: '', next: '', confirm: '' });
+      setTriedPw(false);
       toast.success('Password diperbarui.');
     },
     onError: (e) => toast.error(errMsg(e)),
@@ -174,15 +185,20 @@ export default function Profile() {
       </section>
 
       <form
+        noValidate
         className="card card-pad mt-4 space-y-4"
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
+          if (!form.name.trim()) {
+            setTriedProfile(true);
+            return revealInvalid();
+          }
           save.mutate({});
         }}
       >
         <h2 className="font-semibold">Data diri</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Nama lengkap" className="sm:col-span-2">
+          <Field label="Nama lengkap" className="sm:col-span-2" error={nameErr}>
             {(id) => <input id={id} className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}
           </Field>
           <Field label="No. WhatsApp">
@@ -233,18 +249,22 @@ export default function Profile() {
       </form>
 
       <form
+        noValidate
         className="card card-pad mt-4 space-y-4"
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
-          if (pw.next !== pw.confirm) return toast.error('Konfirmasi password tidak sama.');
+          if (!pw.current || pw.next.length < 8 || pw.next !== pw.confirm) {
+            setTriedPw(true);
+            return revealInvalid();
+          }
           changePw.mutate();
         }}
       >
         <h2 className="font-semibold">Ganti password</h2>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Password lama">{(id) => <input id={id} type="password" autoComplete="current-password" className="input" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required />}</Field>
-          <Field label="Password baru">{(id) => <input id={id} type="password" autoComplete="new-password" className="input" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} required minLength={8} />}</Field>
-          <Field label="Ulangi">{(id) => <input id={id} type="password" autoComplete="new-password" className="input" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} required />}</Field>
+          <Field label="Password lama" error={pwErr.current}>{(id) => <input id={id} type="password" autoComplete="current-password" className="input" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />}</Field>
+          <Field label="Password baru" error={pwErr.next}>{(id) => <input id={id} type="password" autoComplete="new-password" className="input" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />}</Field>
+          <Field label="Ulangi" error={pwErr.confirm}>{(id) => <input id={id} type="password" autoComplete="new-password" className="input" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />}</Field>
         </div>
         <div className="flex justify-end">
           <button className="btn btn-secondary" disabled={changePw.isPending}>{changePw.isPending && <Spinner />} Perbarui password</button>

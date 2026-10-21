@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarRange, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { fullPsychName } from '@/lib/format';
 import type { Psychologist, User } from '@/lib/types';
 import { Avatar, Field, Modal, PageHeader, Segmented, Spinner } from '@/components/ui';
@@ -127,6 +128,7 @@ function StaffModal({ initial, onClose }: { initial: StaffForm; onClose: () => v
     },
     onError: (e) => {
       setErrors(e instanceof ApiError ? ((e.data.fields as typeof errors) ?? {}) : {});
+      revealInvalid();
       toast.error(errMsg(e));
     },
   });

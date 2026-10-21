@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { ChevronDown, Headset, LogOut, MessageCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiError, api, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { useAuth } from '@/lib/auth';
 import { useKeyboardOpen, useMediaQuery } from '@/lib/viewport';
 import type { SupportMessage } from '@/lib/types';
@@ -264,7 +265,10 @@ function GuestForm({ onStarted, className }: { onStarted: (token: string, identi
     onSuccess: (r, d) => onStarted(r.token, d),
     onError: (e) => {
       const f = e instanceof ApiError ? (e.data.fields as Record<string, string[]> | undefined) : undefined;
-      if (f) setErrors({ name: f.name?.[0], pn: f.pn?.[0] });
+      if (f) {
+        setErrors({ name: f.name?.[0], pn: f.pn?.[0] });
+        revealInvalid();
+      }
       else toast.error(errMsg(e));
     },
   });
@@ -277,7 +281,7 @@ function GuestForm({ onStarted, className }: { onStarted: (token: string, identi
       pn: !/^[0-9A-Za-z]{3,20}$/.test(d.pn) ? 'Isi PN kamu (angka/huruf tanpa spasi).' : undefined,
     };
     setErrors(errs);
-    if (errs.name || errs.pn) return;
+    if (errs.name || errs.pn) return revealInvalid();
     start.mutate(d);
   };
 

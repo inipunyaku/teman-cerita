@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { ChevronLeft, ChevronRight, Info, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { useAuth } from '@/lib/auth';
 import { fmtYmd, hmDot, todayWib } from '@/lib/format';
 import type { AvailabilityBlock, AvailabilitySession, Psychologist } from '@/lib/types';
@@ -186,7 +187,11 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
     return out.sort();
   }, [from, days, weeks, today]);
 
-  const valid = dates.length > 0 && modes.length > 0 && toMin(time.end) - toMin(time.start) >= 60;
+  const short = toMin(time.end) - toMin(time.start) < 60;
+  const valid = dates.length > 0 && modes.length > 0 && !short;
+  // Bagian yang belum lengkap ditandai merah setelah pengguna menekan Simpan.
+  const [tried, setTried] = useState(false);
+  const miss = { days: tried && dates.length === 0, time: short, modes: tried && modes.length === 0 };
   const m = useMutation({
     mutationFn: () => api.post<{ created: number }>('/availability', { psychologistId, dates, start: time.start, end: time.end, modes }),
     onSuccess: (r) => {
@@ -207,7 +212,7 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>Batal</button>
-          <button className="btn btn-primary" disabled={!valid || m.isPending} onClick={() => m.mutate()}>{m.isPending && <Spinner />} Simpan {dates.length > 0 && `(${dates.length} hari)`}</button>
+          <button className="btn btn-primary" disabled={m.isPending} onClick={() => (valid ? m.mutate() : (setTried(true), revealInvalid()))}>{m.isPending && <Spinner />} Simpan {dates.length > 0 && `(${dates.length} hari)`}</button>
         </>
       }
     >
@@ -222,9 +227,9 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
             )}
           </Field>
         </div>
-        <div>
+        <div data-invalid={miss.days ? '' : undefined}>
           <p className="label">Hari</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className={clsx('flex flex-wrap gap-1.5', miss.days && 'invalid-group')}>
             {[1, 2, 3, 4, 5].map((d) => (
               <button
                 key={d}
@@ -237,8 +242,9 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
               </button>
             ))}
           </div>
+          {miss.days && <p className="err mt-3">Pilih minimal satu hari kerja yang belum lewat.</p>}
         </div>
-        <div>
+        <div data-invalid={miss.time ? '' : undefined}>
           <p className="label">Jam</p>
           <div className="mb-2 flex flex-wrap gap-1.5">
             {PRESETS.map(([label, a, b]) => (
@@ -255,12 +261,12 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
               {TIME_OPTIONS.slice(2).map((t) => <option key={t} value={t}>{hmDot(t)}</option>)}
             </select>
           </div>
-          {toMin(time.end) - toMin(time.start) < 60 && <p className="err">Rentang minimal 60 menit.</p>}
+          {short && <p className="err">Rentang minimal 60 menit.</p>}
           <p className="hint">Jam istirahat otomatis tidak bisa dipesan walau berada di dalam rentang ini.</p>
         </div>
-        <div>
+        <div data-invalid={miss.modes ? '' : undefined}>
           <p className="label">Media konseling yang tersedia</p>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className={clsx('grid gap-2 sm:grid-cols-3', miss.modes && 'invalid-group')}>
             {MODES.map((md) => {
               const Icon = MODE_ICON[md];
               const on = modes.includes(md);
@@ -277,6 +283,7 @@ function AddModal({ start, psychologistId, onClose }: { start: string; psycholog
               );
             })}
           </div>
+          {miss.modes && <p className="err mt-3">Pilih minimal satu media konseling.</p>}
         </div>
         <p className="rounded-2xl bg-canvas px-4 py-3 text-[13px] text-ink-soft">
           {dates.length ? <>Akan dibuka untuk: {dates.map((d) => fmtYmd(d, 'EEE d MMM')).join(', ')}.</> : 'Pilih minimal satu hari kerja mulai hari ini.'}

@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { ArrowLeft, ClipboardCheck, Pencil, PlayCircle, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import type { Report, TicketDetail } from '@/lib/types';
 import { Avatar, Field, Modal, OUTCOME_STYLE, OutcomeChip, Spinner } from '@/components/ui';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -183,7 +184,11 @@ function ReportModal({ ticketId, initial, onClose, onDone }: { ticketId: number;
     noteForClient: initial?.noteForClient ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
-  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  // Mengubah isian menghapus tanda merah di isian itu.
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
+    setF({ ...f, [k]: e.target.value });
+    setErrors((x) => ({ ...x, [k]: undefined }));
+  };
   const noShow = f.outcome === 'no_show';
   const m = useMutation({
     mutationFn: () => api.post(`/tickets/${ticketId}/report`, f),
@@ -195,6 +200,7 @@ function ReportModal({ ticketId, initial, onClose, onDone }: { ticketId: number;
     onError: (e) => {
       setErrors(e instanceof ApiError ? ((e.data.fields as typeof errors) ?? {}) : {});
       toast.error(errMsg(e));
+      revealInvalid();
     },
   });
   const err = (k: string) => errors[k]?.[0];
@@ -209,19 +215,34 @@ function ReportModal({ ticketId, initial, onClose, onDone }: { ticketId: number;
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>Nanti dulu</button>
-          <button className="btn btn-primary" disabled={!f.outcome || m.isPending} onClick={() => m.mutate()}>{m.isPending && <Spinner />} Simpan hasil</button>
+          <button
+            className="btn btn-primary"
+            disabled={m.isPending}
+            onClick={() => {
+              if (!f.outcome) {
+                setErrors({ outcome: ['Pilih rencana tindak lanjut dulu.'] });
+                return revealInvalid();
+              }
+              m.mutate();
+            }}
+          >
+            {m.isPending && <Spinner />} Simpan hasil
+          </button>
         </>
       }
     >
       <div className="space-y-5 pb-2">
-        <div>
+        <div data-invalid={err('outcome') ? '' : undefined}>
           <p className="label">Rencana tindak lanjut</p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className={clsx('grid gap-2 sm:grid-cols-2', err('outcome') && 'invalid-group')}>
             {OUTCOMES.map((o) => (
               <button
                 key={o}
                 type="button"
-                onClick={() => setF({ ...f, outcome: o })}
+                onClick={() => {
+                  setF({ ...f, outcome: o });
+                  setErrors((x) => ({ ...x, outcome: undefined }));
+                }}
                 aria-pressed={f.outcome === o}
                 className={clsx('flex items-start gap-3 rounded-2xl border p-3 text-left transition-colors', f.outcome === o ? 'border-transparent' : 'border-line hover:border-sky-200')}
                 style={f.outcome === o ? { boxShadow: `0 0 0 2px ${OUTCOME_STYLE[o].color}`, background: `${OUTCOME_STYLE[o].color}14` } : undefined}

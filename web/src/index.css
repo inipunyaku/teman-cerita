@@ -57,6 +57,23 @@
   .err {
     @apply mt-1.5 text-[12.5px] font-medium text-coral-700;
   }
+  /* Isian wajib yang belum diisi/benar (Field dengan error, atau grup pilihan bertanda data-invalid). */
+  [data-invalid] {
+    scroll-margin-top: 6.5rem;
+    scroll-margin-bottom: 9rem;
+  }
+  [data-invalid] .input,
+  .input[aria-invalid='true'] {
+    @apply border-coral-500 ring-4 ring-coral-50 focus:border-coral-500 focus:ring-coral-50;
+  }
+  /* Grup pilihan (radio, skala, kartu pilihan) yang belum dipilih. */
+  .invalid-group {
+    @apply rounded-2xl outline outline-2 outline-offset-[6px] outline-coral-500;
+  }
+  /* Kartu/baris yang belum diisi, mis. kartu jadwal atau pernyataan skrining. */
+  .invalid-card {
+    @apply border-coral-500 bg-coral-50/60 ring-2 ring-coral-500/40;
+  }
   .input {
     /* Selalu 16px: iOS Safari otomatis zoom bila font input < 16px */
     @apply h-11 w-full rounded-xl border border-line bg-white px-3.5 text-base text-ink placeholder:text-ink-faint

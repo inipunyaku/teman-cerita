@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { ArrowLeft, Clock, Search, Settings2, UserRoundCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiError, api, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { fmtDay, fmtTime, fromNow } from '@/lib/format';
 import type { SupportMessage, SupportThread } from '@/lib/types';
 import { Avatar, EmptyState, Field, Modal, PageHeader, Spinner } from '@/components/ui';
@@ -259,7 +260,10 @@ function SettingsModal({
     },
     onError: (e) => {
       const fields = e instanceof ApiError ? (e.data.fields as Record<string, string[]> | undefined) : undefined;
-      if (fields) setErrors(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v[0]])));
+      if (fields) {
+        setErrors(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v[0]])));
+        revealInvalid();
+      }
       toast.error(errMsg(e));
     },
   });
@@ -277,7 +281,7 @@ function SettingsModal({
     errs.greeting = f.greeting.trim() ? undefined : 'Pesan wajib diisi.';
     errs.unavailable = f.unavailable.trim() ? undefined : 'Pesan wajib diisi.';
     setErrors(errs);
-    if (Object.values(errs).some(Boolean)) return;
+    if (Object.values(errs).some(Boolean)) return revealInvalid();
     save.mutate({
       ...f,
       responseMinutes: response,

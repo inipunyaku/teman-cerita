@@ -211,8 +211,15 @@ export function Field({
   optional?: boolean;
 }) {
   const id = useId();
+  // Kolom wajib yang belum benar: bingkai merah (lihat [data-invalid] di index.css) & dibaca pembaca layar.
+  useEffect(() => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (error) el.setAttribute('aria-invalid', 'true');
+    else el.removeAttribute('aria-invalid');
+  }, [id, error]);
   return (
-    <div className={className}>
+    <div className={className} data-invalid={error ? '' : undefined}>
       <label htmlFor={id} className="label">
         {label}
         {optional && <span className="ml-1 font-normal text-ink-faint">(opsional)</span>}

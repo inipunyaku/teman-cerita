@@ -29,7 +29,7 @@ export function usePsychologists() {
  * Pilih tanggal → psikolog yang tersedia → jam → media. Hanya slot yang masih kosong yang ditampilkan.
  * `ticketId` dipakai saat mengubah jadwal (slot milik tiket itu sendiri dianggap kosong).
  */
-export function SlotPicker({ value, onChange, ticketId }: { value: SlotValue; onChange: (v: SlotValue) => void; ticketId?: number }) {
+export function SlotPicker({ value, onChange, ticketId, showErrors }: { value: SlotValue; onChange: (v: SlotValue) => void; ticketId?: number; showErrors?: boolean }) {
   const q = ticketId ? `&ticket=${ticketId}` : '';
   const [month, setMonth] = useState(() => (value.date ?? todayWib()).slice(0, 7));
   const [filter, setFilter] = useState<number | 0>(0);
@@ -78,11 +78,20 @@ export function SlotPicker({ value, onChange, ticketId }: { value: SlotValue; on
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   };
   const canPrev = month > todayWib().slice(0, 7);
+  // Bagian pertama yang belum dipilih ditandai merah setelah pengguna mencoba melanjutkan.
+  const miss = {
+    date: !!showErrors && !value.date,
+    psych: !!showErrors && !!value.date && !value.psychologistId,
+    time: !!showErrors && !!value.psychologistId && !value.time,
+    mode: !!showErrors && !!value.time && !value.mode,
+  };
+  const invalid = (on: boolean) => (on ? { 'data-invalid': '' } : {});
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,300px)_minmax(0,1fr)_minmax(0,280px)]">
       {/* Kalender */}
-      <section className="card flex flex-col p-4 sm:p-5">
+      <section className={clsx('card flex flex-col p-4 sm:p-5', miss.date && 'invalid-card')} {...invalid(miss.date)}>
+        {miss.date && <p className="err mb-2 mt-0">Pilih tanggal sesi dulu.</p>}
         <div className="flex items-center justify-between">
           <button type="button" className="btn btn-ghost btn-sm w-9 px-0" disabled={!canPrev} onClick={() => shift(-1)} aria-label="Bulan sebelumnya">
             <ChevronLeft size={18} />
@@ -137,9 +146,12 @@ export function SlotPicker({ value, onChange, ticketId }: { value: SlotValue; on
 
       {/* Psikolog, waktu, media */}
       <section className="min-w-0 space-y-4">
-        <div className="card p-4 sm:p-5">
+        <div className={clsx('card p-4 sm:p-5', miss.psych && 'invalid-card')} {...invalid(miss.psych)}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold">Pilih Psikolog</h3>
+            <div>
+              <h3 className="font-semibold">Pilih Psikolog</h3>
+              {miss.psych && <p className="err mt-0.5">Pilih salah satu psikolog.</p>}
+            </div>
             <select className="input h-10 w-auto min-w-[190px] text-sm" value={filter} onChange={(e) => setFilter(Number(e.target.value))} aria-label="Saring psikolog">
               <option value={0}>Semua Psikolog</option>
               {psychs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -179,8 +191,9 @@ export function SlotPicker({ value, onChange, ticketId }: { value: SlotValue; on
         </div>
 
         {selectedPsych && value.date && times.length > 0 && (
-          <div className="card animate-rise p-4 sm:p-5">
+          <div className={clsx('card animate-rise p-4 sm:p-5', miss.time && 'invalid-card')} {...invalid(miss.time)}>
             <h3 className="font-semibold">Pilih Waktu</h3>
+            {miss.time && <p className="err mt-0.5">Pilih salah satu jam.</p>}
             <p className="text-[13px] text-ink-soft">{fmtYmd(value.date)} · sesi 60 menit</p>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {times.map((t) => (
@@ -202,8 +215,9 @@ export function SlotPicker({ value, onChange, ticketId }: { value: SlotValue; on
         )}
 
         {slot && (
-          <div className="card animate-rise p-4 sm:p-5">
+          <div className={clsx('card animate-rise p-4 sm:p-5', miss.mode && 'invalid-card')} {...invalid(miss.mode)}>
             <h3 className="font-semibold">Pilih media konseling yang kamu inginkan</h3>
+            {miss.mode && <p className="err mt-0.5">Pilih media konseling.</p>}
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               {MODES.map((m) => {
                 const Icon = MODE_ICON[m];

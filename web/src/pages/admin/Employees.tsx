@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { Download, Pencil, Plus, Search, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { ageOf } from '@/lib/format';
 import type { Unit, User } from '@/lib/types';
 import { Avatar, EmptyState, Field, Modal, PageHeader, Spinner } from '@/components/ui';
@@ -150,6 +151,7 @@ function EmployeeModal({ initial, units, onClose }: { initial: Form; units: Unit
     },
     onError: (e) => {
       setErrors(e instanceof ApiError ? ((e.data.fields as typeof errors) ?? {}) : {});
+      revealInvalid();
       toast.error(errMsg(e));
     },
   });

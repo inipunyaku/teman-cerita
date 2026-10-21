@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import { api, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { homeFor, useAuth } from '@/lib/auth';
 import type { User } from '@/lib/types';
 import { Field, Spinner } from '@/components/ui';
@@ -24,6 +25,8 @@ export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
+  const [tried, setTried] = useState(false);
+  const missing = { identifier: tried && !identifier.trim(), password: tried && !password };
 
   const login = useMutation({
     mutationFn: (body: { identifier: string; password: string }) => api.post<{ user: User }>('/auth/login', body),
@@ -38,6 +41,10 @@ export default function Login() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (!identifier.trim() || !password) {
+      setTried(true);
+      return revealInvalid();
+    }
     login.mutate({ identifier, password });
   };
 
@@ -51,8 +58,8 @@ export default function Login() {
         <p className="mt-2 text-ink-soft">Masuk pakai email atau PN kamu.</p>
       </div>
 
-      <form onSubmit={submit} className="mt-8 space-y-4">
-        <Field label="Email atau PN">
+      <form onSubmit={submit} noValidate className="mt-8 space-y-4">
+        <Field label="Email atau PN" error={missing.identifier ? 'Isi email atau PN kamu.' : undefined}>
           {(id) => (
             <input
               id={id}
@@ -61,14 +68,13 @@ export default function Login() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="nama@kantor.co.id atau 90001234"
-              required
             />
           )}
         </Field>
-        <Field label="Password">
+        <Field label="Password" error={missing.password ? 'Isi password kamu.' : undefined}>
           {(id) => (
             <div className="relative">
-              <input id={id} type={show ? 'text' : 'password'} className="input pr-11" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <input id={id} type={show ? 'text' : 'password'} className="input pr-11" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
               <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-1 top-1 grid h-9 w-9 place-items-center rounded-lg text-ink-faint hover:text-ink" aria-label={show ? 'Sembunyikan password' : 'Tampilkan password'}>
                 {show ? <EyeOff size={18} strokeWidth={2.33} /> : <Eye size={18} strokeWidth={2.33} />}
               </button>

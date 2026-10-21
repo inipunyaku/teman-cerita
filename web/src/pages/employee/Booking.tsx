@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import { api, ApiError, errMsg } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { revealInvalid } from '@/lib/validation';
 import { addMinutes, fmtDate, fmtTime, fmtYmd, fullPsychName, hmDot } from '@/lib/format';
 import type { Eligibility, Ticket } from '@/lib/types';
 import { Avatar, Field, LogoMark, MODE_ICON, Sk, Spinner } from '@/components/ui';
@@ -99,6 +100,8 @@ export default function Booking() {
   const [draft, setDraft, clearDraft] = useDraft(u.id, u.nickname ?? u.name.split(' ')[0]);
   const [declined, setDeclined] = useState(false);
   const [done, setDone] = useState<Ticket | null>(null);
+  // Langkah yang sudah dicoba dilanjutkan tapi belum lengkap → isian yang kurang ditandai merah.
+  const [attempted, setAttempted] = useState<Record<number, boolean>>({});
   const topRef = useRef<HTMLDivElement>(null);
   const { data: el, isLoading } = useQuery({ queryKey: ['booking', 'eligibility'], queryFn: () => api.get<Eligibility>('/booking/eligibility') });
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
@@ -158,19 +161,17 @@ export default function Booking() {
     !!(draft.slot.psychologistId && draft.slot.date && draft.slot.time && draft.slot.mode),
     true,
   ];
+  const showErrors = !!attempted[draft.step];
   const next = () => {
     if (!valid[draft.step]) {
-      if (draft.step === 2) {
-        const first = draft.screening.findIndex((x) => x == null);
-        document.getElementById(`scr-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return toast.error(`Masih ada ${SCREENING_ITEMS.length - answered} pernyataan yang belum dijawab.`);
-      }
+      setAttempted((a) => ({ ...a, [draft.step]: true }));
+      revealInvalid();
       return toast.error(
-        draft.step === 1
-          ? 'Isi nama panggilanmu dulu ya.'
-          : draft.step === 3
-            ? 'Lengkapi topik, keluhan (min. 100 karakter), skala, dan harapanmu.'
-            : 'Pilih tanggal, psikolog, waktu, dan media konseling.',
+        draft.step === 2
+          ? `Masih ada ${SCREENING_ITEMS.length - answered} pernyataan yang belum dijawab.`
+          : draft.step === 4
+            ? 'Lengkapi pilihan jadwal yang ditandai merah.'
+            : 'Lengkapi isian yang ditandai merah ya.',
       );
     }
     go(draft.step + 1);
@@ -184,7 +185,11 @@ export default function Booking() {
       {draft.step === 0 && <ConsentStep onAgree={() => go(1)} onDecline={() => setDeclined(true)} />}
       {draft.step === 1 && (
         <StepCard title="Data Diri" description="Yuk, kenalan terlebih dahulu.">
-          <Field label="Nama panggilan" hint="Nama panggilan akan digunakan selama proses konseling.">
+          <Field
+            label="Nama panggilan"
+            hint="Nama panggilan akan digunakan selama proses konseling."
+            error={showErrors && !draft.nickname.trim() ? 'Isi nama panggilanmu dulu ya.' : undefined}
+          >
             {(id) => <input id={id} className="input" maxLength={40} value={draft.nickname} onChange={(e) => set({ nickname: e.target.value })} placeholder="Contoh: Natty" autoFocus />}
           </Field>
           <div className="mt-6 rounded-2xl bg-canvas p-4">
@@ -197,15 +202,15 @@ export default function Booking() {
           </div>
         </StepCard>
       )}
-      {draft.step === 2 && <ScreeningStep answers={draft.screening} onChange={(screening) => set({ screening })} />}
-      {draft.step === 3 && <NeedsStep draft={draft} set={set} />}
+      {draft.step === 2 && <ScreeningStep answers={draft.screening} onChange={(screening) => set({ screening })} showErrors={showErrors} />}
+      {draft.step === 3 && <NeedsStep draft={draft} set={set} showErrors={showErrors} />}
       {draft.step === 4 && (
         <div>
           <div className="mb-5">
             <h1 className="text-[26px] font-semibold leading-tight tracking-tight sm:text-[30px]">Buat Janji Sesi Konseling</h1>
             <p className="mt-1.5 text-ink-soft">Pilih tanggal untuk melihat psikolog dan jadwal yang tersedia. Hanya slot yang masih tersedia yang akan ditampilkan.</p>
           </div>
-          <SlotPicker value={draft.slot} onChange={(slot) => set({ slot })} />
+          <SlotPicker value={draft.slot} onChange={(slot) => set({ slot })} showErrors={showErrors} />
         </div>
       )}
       {draft.step === 5 && <ConfirmStep draft={draft} onEdit={go} />}
@@ -216,7 +221,7 @@ export default function Booking() {
             <ArrowLeft size={17} /> Kembali
           </button>
           {draft.step < 5 ? (
-            <button type="button" className={clsx('btn btn-primary h-12 flex-1 px-6 shadow-pop sm:w-48 sm:flex-none', !valid[draft.step] && 'opacity-60')} onClick={next}>
+            <button type="button" className="btn btn-primary h-12 flex-1 px-6 shadow-pop sm:w-48 sm:flex-none" onClick={next}>
               Lanjutkan <ArrowRight size={17} />
             </button>
           ) : (
@@ -344,7 +349,8 @@ function ConsentStep({ onAgree, onDecline }: { onAgree: () => void; onDecline: (
   );
 }
 
-function ScreeningStep({ answers, onChange }: { answers: (number | null)[]; onChange: (a: (number | null)[]) => void }) {
+function ScreeningStep({ answers, onChange, showErrors }: { answers: (number | null)[]; onChange: (a: (number | null)[]) => void; showErrors: boolean }) {
+  const missing = (i: number) => showErrors && answers[i] == null;
   const setAt = (i: number, v: number) => onChange(answers.map((x, k) => (k === i ? v : x)));
   const answered = answers.filter((x) => x != null).length;
   return (
@@ -366,7 +372,12 @@ function ScreeningStep({ answers, onChange }: { answers: (number | null)[]; onCh
           </thead>
           <tbody>
             {SCREENING_ITEMS.map((item, i) => (
-              <tr key={i} id={`scr-${i}`} className={clsx('scroll-mt-28 border-t border-line', i % 2 && 'bg-canvas/50')}>
+              <tr
+                key={i}
+                id={`scr-${i}`}
+                data-invalid={missing(i) ? '' : undefined}
+                className={clsx('scroll-mt-28 border-t border-line', missing(i) ? 'bg-coral-50 shadow-[inset_3px_0_0] shadow-coral-500' : i % 2 && 'bg-canvas/50')}
+              >
                 <td className="px-4 py-3.5 text-[14px] leading-snug"><span className="mr-1.5 text-ink-faint">{i + 1}.</span>{item.text}</td>
                 {LIKERT.map((l, k) => (
                   <td key={l} className="text-center">
@@ -383,8 +394,9 @@ function ScreeningStep({ answers, onChange }: { answers: (number | null)[]; onCh
       {/* Mobile: kartu */}
       <ol className="space-y-3 md:hidden">
         {SCREENING_ITEMS.map((item, i) => (
-          <li key={i} id={`scr-${i}`} className="scroll-mt-28 rounded-2xl border border-line p-4">
+          <li key={i} id={`scr-${i}`} data-invalid={missing(i) ? '' : undefined} className={clsx('scroll-mt-28 rounded-2xl border p-4', missing(i) ? 'invalid-card' : 'border-line')}>
             <p className="text-[14.5px] leading-snug"><span className="mr-1 text-ink-faint">{i + 1}.</span>{item.text}</p>
+            {missing(i) && <p className="err">Belum dijawab.</p>}
             <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label={item.text}>
               {LIKERT.map((l, k) => (
                 <button
@@ -407,14 +419,20 @@ function ScreeningStep({ answers, onChange }: { answers: (number | null)[]; onCh
   );
 }
 
-function NeedsStep({ draft, set }: { draft: Draft; set: (p: Partial<Draft>) => void }) {
+function NeedsStep({ draft, set, showErrors }: { draft: Draft; set: (p: Partial<Draft>) => void; showErrors: boolean }) {
   const left = COMPLAINT_MIN - draft.complaint.trim().length;
+  const err = {
+    topic: showErrors && !draft.topic,
+    complaint: showErrors && left > 0,
+    impact: showErrors && !(draft.impact > 0),
+    expectation: showErrors && draft.expectation.trim().length < 3,
+  };
   return (
     <StepCard title="Ceritakan Kebutuhanmu" description="Bantu kami memahami kebutuhanmu agar sesi konseling dapat berjalan lebih optimal.">
       <div className="space-y-7">
-        <div>
+        <div data-invalid={err.topic ? '' : undefined}>
           <p className="label">Apa topik permasalahan yang akan kamu ceritakan?</p>
-          <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+          <div className={clsx('grid gap-2 sm:grid-cols-2', err.topic && 'invalid-group')} role="radiogroup" aria-invalid={err.topic || undefined}>
             {(Object.entries(CLIENT_TOPICS) as [ClientTopic, string][]).map(([k, label]) => (
               <button
                 key={k}
@@ -431,15 +449,18 @@ function NeedsStep({ draft, set }: { draft: Draft; set: (p: Partial<Draft>) => v
               </button>
             ))}
           </div>
+          {err.topic && <p className="err mt-3">Pilih salah satu topik.</p>}
         </div>
 
-        <Field label="Ceritakan lebih lanjut tentang keluhan yang kamu alami" hint={left > 0 ? `Minimal ${COMPLAINT_MIN} karakter · kurang ${left} lagi` : `${draft.complaint.trim().length} karakter`}>
+        <Field
+          error={err.complaint ? (draft.complaint.trim() ? `Minimal ${COMPLAINT_MIN} karakter · kurang ${left} lagi` : 'Ceritakan keluhanmu (minimal 100 karakter).') : undefined}
+          label="Ceritakan lebih lanjut tentang keluhan yang kamu alami" hint={left > 0 ? `Minimal ${COMPLAINT_MIN} karakter · kurang ${left} lagi` : `${draft.complaint.trim().length} karakter`}>
           {(id) => <textarea id={id} className="input" rows={5} maxLength={3000} value={draft.complaint} onChange={(e) => set({ complaint: e.target.value })} placeholder="Tuliskan keluhan yang sedang kamu alami…" />}
         </Field>
 
-        <div>
+        <div data-invalid={err.impact ? '' : undefined}>
           <p className="label">Apakah kondisi psikologis yang kamu alami berpengaruh pada keseharianmu?</p>
-          <div className="grid grid-cols-5 gap-2 sm:grid-cols-10" role="radiogroup">
+          <div className={clsx('grid grid-cols-5 gap-2 sm:grid-cols-10', err.impact && 'invalid-group')} role="radiogroup" aria-invalid={err.impact || undefined}>
             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
@@ -457,9 +478,10 @@ function NeedsStep({ draft, set }: { draft: Draft; set: (p: Partial<Draft>) => v
             <span>1 = {IMPACT_LABEL[1]}</span>
             <span className="text-right">10 = {IMPACT_LABEL[10]}</span>
           </div>
+          {err.impact && <p className="err">Pilih angka 1–10.</p>}
         </div>
 
-        <Field label="Apa yang kamu harapkan melalui sesi konseling ini?">
+        <Field label="Apa yang kamu harapkan melalui sesi konseling ini?" error={err.expectation ? 'Tuliskan harapanmu (minimal 3 karakter).' : undefined}>
           {(id) => <textarea id={id} className="input" rows={3} maxLength={1500} value={draft.expectation} onChange={(e) => set({ expectation: e.target.value })} placeholder="Ceritakan apa yang ingin kamu capai setelah mengikuti sesi konseling ini…" />}
         </Field>
         <p className="flex gap-1.5 text-[12.5px] text-ink-faint"><Lock size={13} className="mt-0.5 shrink-0" /> Jawabanmu hanya dibaca oleh psikolog yang mendampingimu.</p>

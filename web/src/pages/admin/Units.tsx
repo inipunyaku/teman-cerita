@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import type { Unit } from '@/lib/types';
 import { Field, Modal, PageHeader, Spinner } from '@/components/ui';
 import { TableSkeleton } from '@/components/Skeletons';
@@ -47,6 +48,7 @@ export default function Units() {
 function UnitModal({ unit, onClose }: { unit: Partial<Unit>; onClose: () => void }) {
   const qc = useQueryClient();
   const [name, setName] = useState(unit.name ?? '');
+  const [tried, setTried] = useState(false);
   const [code, setCode] = useState(unit.code ?? '');
   const [active, setActive] = useState(unit.active !== 0);
   const m = useMutation({
@@ -61,9 +63,9 @@ function UnitModal({ unit, onClose }: { unit: Partial<Unit>; onClose: () => void
   });
   return (
     <Modal open onClose={onClose} title={unit.id ? 'Ubah unit kerja' : 'Tambah unit kerja'}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Batal</button><button className="btn btn-primary" disabled={name.trim().length < 2 || m.isPending} onClick={() => m.mutate()}>{m.isPending && <Spinner />} Simpan</button></>}>
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Batal</button><button className="btn btn-primary" disabled={m.isPending} onClick={() => (name.trim().length < 2 ? (setTried(true), revealInvalid()) : m.mutate())}>{m.isPending && <Spinner />} Simpan</button></>}>
       <div className="grid gap-4 pb-2 sm:grid-cols-[1fr_140px]">
-        <Field label="Nama unit">{(id) => <input id={id} className="input" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Field label="Nama unit" error={tried && name.trim().length < 2 ? 'Nama unit minimal 2 karakter.' : undefined}>{(id) => <input id={id} className="input" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Kode" optional>{(id) => <input id={id} className="input uppercase" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />}</Field>
         <label className="flex items-center gap-2.5 text-sm sm:col-span-2">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 accent-sky-600" /> Aktif (bisa dipilih di master data pekerja)

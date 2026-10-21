@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError, errMsg } from '@/lib/api';
+import { revealInvalid } from '@/lib/validation';
 import { fmtDate, fmtTime, fullPsychName } from '@/lib/format';
 import type { Eligibility, Report, TicketDetail as Detail } from '@/lib/types';
 import { Avatar, Field, MODE_ICON, Modal, Spinner, StatusChip } from '@/components/ui';
@@ -250,6 +251,8 @@ export function ResultBody({ report }: { report: Report | null }) {
 
 function CancelModal({ open, onClose, ticketId, onDone }: { open: boolean; onClose: () => void; ticketId: number; onDone: () => void }) {
   const [reason, setReason] = useState('');
+  const [tried, setTried] = useState(false);
+  const invalid = reason.trim().length < 3;
   const m = useMutation({
     mutationFn: () => api.post(`/tickets/${ticketId}/cancel`, { reason }),
     onSuccess: () => {
@@ -268,11 +271,23 @@ function CancelModal({ open, onClose, ticketId, onDone }: { open: boolean; onClo
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>Kembali</button>
-          <button className="btn btn-danger" disabled={reason.trim().length < 3 || m.isPending} onClick={() => m.mutate()}>{m.isPending && <Spinner />} Batalkan sesi</button>
+          <button
+            className="btn btn-danger"
+            disabled={m.isPending}
+            onClick={() => {
+              if (invalid) {
+                setTried(true);
+                return revealInvalid();
+              }
+              m.mutate();
+            }}
+          >
+            {m.isPending && <Spinner />} Batalkan sesi
+          </button>
         </>
       }
     >
-      <Field label="Alasan pembatalan">
+      <Field label="Alasan pembatalan" error={tried && invalid ? 'Tuliskan alasan pembatalan (minimal 3 karakter).' : undefined}>
         {(id) => <textarea id={id} className="input" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Misalnya: ada tugas dinas mendadak" />}
       </Field>
     </Modal>
@@ -283,6 +298,7 @@ function CancelModal({ open, onClose, ticketId, onDone }: { open: boolean; onClo
 export function RescheduleModal({ ticketId, initial, onClose, onDone, admin }: { ticketId: number; initial: SlotValue; onClose: () => void; onDone: () => void; admin?: boolean }) {
   const qc = useQueryClient();
   const [slot, setSlot] = useState<SlotValue>(initial);
+  const [tried, setTried] = useState(false);
   const ready = slot.psychologistId && slot.date && slot.time && slot.mode;
   const m = useMutation({
     mutationFn: () => api.post(`/tickets/${ticketId}/reschedule`, slot),
@@ -306,12 +322,25 @@ export function RescheduleModal({ ticketId, initial, onClose, onDone, admin }: {
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>Batal</button>
-          <button className="btn btn-primary" disabled={!ready || m.isPending} onClick={() => m.mutate()}>{m.isPending && <Spinner />} Simpan jadwal baru</button>
+          <button
+            className="btn btn-primary"
+            disabled={m.isPending}
+            onClick={() => {
+              if (!ready) {
+                setTried(true);
+                toast.error('Lengkapi pilihan jadwal yang ditandai merah.');
+                return revealInvalid();
+              }
+              m.mutate();
+            }}
+          >
+            {m.isPending && <Spinner />} Simpan jadwal baru
+          </button>
         </>
       }
     >
       <div className="pb-3">
-        <SlotPicker value={slot} onChange={setSlot} ticketId={ticketId} />
+        <SlotPicker value={slot} onChange={setSlot} ticketId={ticketId} showErrors={tried} />
       </div>
     </Modal>
   );
@@ -323,10 +352,22 @@ function FeedbackModal({ ticketId, onClose, onDone }: { ticketId: number; onClos
   const [helpful, setHelpful] = useState('');
   const [suggestion, setSuggestion] = useState('');
   const [sent, setSent] = useState(false);
+  const [tried, setTried] = useState(false);
   const PER = 2;
   const pages = Math.ceil(FEEDBACK_ITEMS.length / PER);
   const items = FEEDBACK_ITEMS.slice(page * PER, page * PER + PER);
   const pageDone = items.every((_, k) => answers[page * PER + k] != null);
+  // Pertanyaan di halaman ini yang belum dijawab ditandai merah saat pengguna mencoba lanjut.
+  const checkPage = () => {
+    if (pageDone) return true;
+    setTried(true);
+    revealInvalid();
+    return false;
+  };
+  const goPage = (n: number) => {
+    setTried(false);
+    setPage(n);
+  };
   const m = useMutation({
     mutationFn: () => api.post(`/tickets/${ticketId}/feedback`, { answers, helpful, suggestion }),
     onSuccess: () => {
@@ -356,11 +397,11 @@ function FeedbackModal({ ticketId, onClose, onDone }: { ticketId: number; onClos
       description="Jawaban kamu akan membantu kami terus memberikan layanan yang lebih baik."
       footer={
         <>
-          <button className="btn btn-secondary" onClick={() => (page ? setPage(page - 1) : onClose())}>{page ? 'Kembali' : 'Nanti saja'}</button>
+          <button className="btn btn-secondary" onClick={() => (page ? goPage(page - 1) : onClose())}>{page ? 'Kembali' : 'Nanti saja'}</button>
           {page < pages - 1 ? (
-            <button className="btn btn-primary" disabled={!pageDone} onClick={() => setPage(page + 1)}>Lanjut <ArrowRight size={16} /></button>
+            <button className="btn btn-primary" onClick={() => checkPage() && goPage(page + 1)}>Lanjut <ArrowRight size={16} /></button>
           ) : (
-            <button className="btn btn-primary" disabled={!pageDone || m.isPending} onClick={() => m.mutate()}>{m.isPending && <Spinner />} Kirim feedback</button>
+            <button className="btn btn-primary" disabled={m.isPending} onClick={() => checkPage() && m.mutate()}>{m.isPending && <Spinner />} Kirim feedback</button>
           )}
         </>
       }
@@ -375,10 +416,12 @@ function FeedbackModal({ ticketId, onClose, onDone }: { ticketId: number; onClos
         <div className="space-y-6">
           {items.map((item, k) => {
             const idx = page * PER + k;
+            const missing = tried && answers[idx] == null;
             return (
-              <fieldset key={idx}>
+              <fieldset key={idx} data-invalid={missing ? '' : undefined}>
                 <legend className="text-[14.5px] font-semibold leading-snug">{item.q}</legend>
-                <div className="mt-2.5 grid gap-1.5">
+                {missing && <p className="err mt-1">Pilih salah satu jawaban.</p>}
+                <div className={clsx('mt-2.5 grid gap-1.5', missing && 'invalid-group')}>
                   {[...item.options].map((opt, v) => ({ opt, v: v + 1 })).reverse().map(({ opt, v }) => (
                     <label key={v} className={clsx('flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition-colors', answers[idx] === v ? 'border-sky-500 bg-sky-50' : 'border-line hover:border-sky-200')}>
                       <input type="radio" name={`fb-${idx}`} className="h-4 w-4 accent-sky-600" checked={answers[idx] === v} onChange={() => setAnswers((a) => a.map((x, i) => (i === idx ? v : x)))} />
