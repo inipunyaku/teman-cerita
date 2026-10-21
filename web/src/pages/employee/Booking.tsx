@@ -211,7 +211,7 @@ export default function Booking() {
       {draft.step === 5 && <ConfirmStep draft={draft} onEdit={go} />}
 
       {draft.step > 0 && (
-        <div className="sticky bottom-20 z-10 mt-6 flex justify-end gap-2 sm:bottom-4">
+        <div className="kb-hide sticky bottom-20 z-10 mt-6 flex justify-end gap-2 sm:bottom-4">
           <button type="button" className="btn btn-secondary h-12 flex-1 bg-white px-6 shadow-soft sm:w-40 sm:flex-none" onClick={() => go(draft.step - 1)}>
             <ArrowLeft size={17} /> Kembali
           </button>

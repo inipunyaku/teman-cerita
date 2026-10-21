@@ -93,3 +93,16 @@ export function useAutoHideHeader(ref: RefObject<HTMLElement>, { enabled, resetK
   }, [enabled, resetKey, idleMs, ref]);
   return enabled && hidden;
 }
+
+/**
+ * Menandai <html data-keyboard="open"> selama keyboard HP terbuka. Elemen dengan class `kb-hide` (mis. bar tombol
+ * Kembali/Lanjutkan) disembunyikan lewat CSS supaya kolom yang sedang diisi tidak tertutup.
+ */
+export function useKeyboardFlag() {
+  const open = useKeyboardOpen();
+  useEffect(() => {
+    const html = document.documentElement;
+    if (open) html.dataset.keyboard = 'open';
+    else delete html.dataset.keyboard;
+  }, [open]);
+}

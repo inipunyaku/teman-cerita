@@ -369,3 +369,10 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Disembunyikan di layar kecil selama keyboard HP terbuka (lihat useKeyboardFlag di lib/viewport.ts). */
+@media (max-width: 1023px) {
+  html[data-keyboard='open'] .kb-hide {
+    display: none !important;
+  }
+}

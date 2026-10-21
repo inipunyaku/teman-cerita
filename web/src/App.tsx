@@ -6,6 +6,7 @@ import { TalkIcon } from './components/icons';
 import { api } from './lib/api';
 import { homeFor, useAuth } from './lib/auth';
 import { useRealtime } from './lib/realtime';
+import { useKeyboardFlag } from './lib/viewport';
 import type { Role } from '@shared/constants';
 import { BrandLoader } from './components/Brand';
 import { SupportWidget } from './components/support/SupportWidget';
@@ -117,6 +118,7 @@ function PsychShell() {
 
 export default function App() {
   useRealtime();
+  useKeyboardFlag();
   const { user } = useAuth();
   useEffect(() => {
     if (!user) return;
