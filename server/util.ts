@@ -34,3 +34,11 @@ export const intParam = (v: string) => {
   if (!Number.isInteger(n) || n <= 0) fail(404, 'Data tidak ditemukan.');
   return n;
 };
+
+/** ?page= (mulai 1) & ?pageSize= (default 20, maks. 100). null bila klien tidak meminta pagination. */
+export function pageParams(q: Record<string, unknown>) {
+  if (q.page === undefined || q.page === '') return null;
+  const page = Math.max(1, Math.floor(Number(q.page)) || 1);
+  const size = Math.min(100, Math.max(1, Math.floor(Number(q.pageSize)) || 20));
+  return { page, size, offset: (page - 1) * size };
+}

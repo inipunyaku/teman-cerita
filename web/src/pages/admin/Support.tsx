@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { ArrowLeft, Clock, Search, Settings2, UserRoundCheck } from 'lucide-react';
+import { ArrowLeft, Clock, Settings2, UserRoundCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiError, api, errMsg } from '@/lib/api';
 import { revealInvalid } from '@/lib/validation';
@@ -11,11 +11,14 @@ import type { SupportMessage, SupportThread } from '@/lib/types';
 import { Avatar, EmptyState, Field, Modal, PageHeader, Spinner } from '@/components/ui';
 import { SUPPORT_MINUTES_MAX, SUPPORT_TEXT_MAX, fillSupportText, type SupportSettings } from '@shared/constants';
 import { SupportConversation } from '@/components/support/SupportMessages';
+import { Pagination, SearchInput, matchText, useDebounced, usePaged } from '@/components/table';
 
 /** Kotak masuk chat bantuan dari tombol chat melayang (pekerja, psikolog, dan tamu). */
 export default function AdminSupport() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'waiting' | 'guest' | 'member'>('all');
+  const search = useDebounced(q);
   const activeId = Number(params.get('c')) || null;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { data: cfg } = useQuery({
@@ -23,12 +26,22 @@ export default function AdminSupport() {
     queryFn: () => api.get<{ settings: SupportSettings; defaults: SupportSettings }>('/support/threads/settings'),
   });
 
+  // Semua percakapan dimuat sekali (maks. 200 terbaru), lalu dicari & disaring di browser.
   const { data, isLoading } = useQuery({
-    queryKey: ['support', 'threads', q],
-    queryFn: () => api.get<{ threads: SupportThread[] }>(`/support/threads${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+    queryKey: ['support', 'threads', ''],
+    queryFn: () => api.get<{ threads: SupportThread[]; unread: number }>('/support/threads'),
     refetchInterval: 30_000,
   });
-  const threads = data?.threads ?? [];
+  const threads = (data?.threads ?? []).filter(
+    (t) =>
+      (filter === 'all' ||
+        (filter === 'unread' && t.unread > 0) ||
+        (filter === 'waiting' && !!t.awaitingSince) ||
+        (filter === 'guest' && t.guest) ||
+        (filter === 'member' && !t.guest)) &&
+      matchText(search, t.name, t.pn, t.email, t.unitName, t.lastMessage?.body),
+  );
+  const paged = usePaged(threads, `${search}|${filter}`);
 
   return (
     <div className="animate-rise">
@@ -62,11 +75,15 @@ export default function AdminSupport() {
         )}
       >
         <aside className={clsx('flex min-h-0 flex-col border-line lg:border-r', activeId && 'hidden lg:flex')}>
-          <div className="border-b border-line p-3">
-            <label className="relative block">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-              <input className="input pl-9" placeholder="Cari nama atau PN" value={q} onChange={(e) => setQ(e.target.value)} />
-            </label>
+          <div className="space-y-2 border-b border-line p-3">
+            <SearchInput value={q} onChange={setQ} placeholder="Cari nama, PN, isi pesan" label="Cari percakapan" />
+            <select className="input h-10 text-sm" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} aria-label="Saring percakapan">
+              <option value="all">Semua percakapan</option>
+              <option value="unread">Belum dibaca</option>
+              <option value="waiting">Menunggu balasan</option>
+              <option value="guest">Tamu (belum masuk)</option>
+              <option value="member">Pekerja & psikolog</option>
+            </select>
           </div>
           <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
             {isLoading ? (
@@ -74,9 +91,9 @@ export default function AdminSupport() {
                 <Spinner className="text-sky-600" />
               </div>
             ) : threads.length === 0 ? (
-              <EmptyState title="Belum ada pesan" description={q ? 'Tidak ada percakapan yang cocok.' : 'Pesan bantuan baru akan muncul di sini.'} />
+              <EmptyState title="Belum ada pesan" description={search || filter !== 'all' ? 'Tidak ada percakapan yang cocok.' : 'Pesan bantuan baru akan muncul di sini.'} />
             ) : (
-              threads.map((t) => (
+              paged.pageItems.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setParams({ c: String(t.id) })}
@@ -112,6 +129,9 @@ export default function AdminSupport() {
               ))
             )}
           </div>
+          {paged.total > paged.pageSize && (
+            <Pagination compact className="border-t border-line px-3 py-2" page={paged.page} pageSize={paged.pageSize} total={paged.total} unit="percakapan" onPage={paged.setPage} />
+          )}
         </aside>
         <section className={clsx('min-h-0 flex-col', activeId ? 'flex' : 'hidden lg:flex')}>
           {activeId ? (

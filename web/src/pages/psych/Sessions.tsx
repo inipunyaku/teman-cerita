@@ -1,32 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { MessageCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { fmtDate, fmtTime } from '@/lib/format';
 import type { Ticket } from '@/lib/types';
 import { Avatar, EmptyState, ModeTag, OutcomeChip, PageHeader, ScreeningChip, Segmented, StatusChip } from '@/components/ui';
 import { TableSkeleton } from '@/components/Skeletons';
-import { CLIENT_TOPICS, type ClientTopic } from '@shared/constants';
+import { Pagination, SearchInput, useDebounced } from '@/components/table';
+import { CLIENT_TOPICS, MODE_LABEL, MODES, type ClientTopic } from '@shared/constants';
 
 type Tab = 'upcoming' | 'awaiting' | 'history' | 'all';
+const TAB_STATUS: Record<Tab, string> = { upcoming: 'upcoming', awaiting: 'awaiting_report', history: 'history', all: '' };
 
 export default function Sessions() {
   const [tab, setTab] = useState<Tab>('upcoming');
-  const { data, isLoading } = useQuery({ queryKey: ['tickets', 'psych'], queryFn: () => api.get<{ tickets: Ticket[] }>('/tickets') });
-  const all = data?.tickets ?? [];
-  const list = all.filter((t) =>
-    tab === 'upcoming'
-      ? ['scheduled', 'in_progress'].includes(t.status)
-      : tab === 'awaiting'
-        ? t.status === 'awaiting_report'
-        : tab === 'history'
-          ? ['completed', 'no_show', 'cancelled'].includes(t.status)
-          : true,
-  );
-  if (tab === 'upcoming') list.sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
-  else list.sort((a, b) => b.scheduledStart.localeCompare(a.scheduledStart));
-  const awaitingCount = all.filter((t) => t.status === 'awaiting_report').length;
+  const [q, setQ] = useState('');
+  const [mode, setMode] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const search = useDebounced(q.trim());
+  useEffect(() => setPage(1), [tab, search, mode, pageSize]);
+  // Urutan dari server: akan datang paling dekat dulu, riwayat paling baru dulu.
+  const qs = new URLSearchParams({ status: TAB_STATUS[tab], mode, q: search, page: String(page), pageSize: String(pageSize) });
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['tickets', 'psych', qs.toString()],
+    queryFn: () => api.get<{ tickets: Ticket[]; total: number }>(`/tickets?${qs}`),
+    placeholderData: keepPreviousData,
+  });
+  const { data: awaiting } = useQuery({
+    queryKey: ['tickets', 'psych', 'awaiting-count'],
+    queryFn: () => api.get<{ total: number }>('/tickets?status=awaiting_report&page=1&pageSize=1'),
+  });
+  const list = data?.tickets ?? [];
+  const awaitingCount = awaiting?.total ?? 0;
 
   return (
     <div className="animate-rise">
@@ -46,12 +54,24 @@ export default function Sessions() {
           />
         }
       />
+      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px]">
+        <SearchInput value={q} onChange={setQ} placeholder="Cari kode tiket, nama, nama panggilan, PN" label="Cari sesi" />
+        <select className="input" value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Media">
+          <option value="">Semua media</option>
+          {MODES.map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+        </select>
+      </div>
       {isLoading ? (
         <TableSkeleton />
       ) : list.length === 0 ? (
-        <div className="card"><EmptyState title={tab === 'awaiting' ? 'Semua hasil sesi sudah diisi' : 'Tidak ada sesi'} /></div>
+        <div className="card">
+          <EmptyState
+            title={search || mode ? 'Tidak ada yang cocok' : tab === 'awaiting' ? 'Semua hasil sesi sudah diisi' : 'Tidak ada sesi'}
+            description={search || mode ? 'Coba kata kunci atau filter lain.' : undefined}
+          />
+        </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className={clsx('card overflow-hidden transition-opacity', isFetching && 'opacity-60')}>
           <table className="w-full">
             <thead className="hidden border-b border-line bg-canvas/60 md:table-header-group">
               <tr>
@@ -92,6 +112,9 @@ export default function Sessions() {
             </tbody>
           </table>
         </div>
+      )}
+      {data && (
+        <Pagination className="mt-4" page={page} pageSize={pageSize} total={data.total} unit="sesi" onPage={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onPageSize={setPageSize} />
       )}
     </div>
   );

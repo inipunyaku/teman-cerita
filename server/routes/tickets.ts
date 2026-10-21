@@ -9,7 +9,7 @@ import { publish } from '../events.js';
 import { adminIds, formatWhen, notify } from '../notify.js';
 import { config } from '../config.js';
 import { assertSlotEligible, eligibility, reserveSlot } from '../scheduling.js';
-import { fail, HttpError, intParam, parse } from '../util.js';
+import { fail, HttpError, intParam, parse, pageParams } from '../util.js';
 import {
   ATTACHMENT_KIND_LABEL,
   ATTACHMENT_MAX_BYTES,
@@ -234,6 +234,7 @@ const leadOk = (start: string) => Date.parse(start) - Date.now() >= SCHEDULE.lea
 const GROUPS: Record<string, TicketStatus[]> = {
   upcoming: ['scheduled', 'in_progress'],
   done: ['awaiting_report', 'completed', 'no_show'],
+  history: ['completed', 'no_show', 'cancelled'],
 };
 
 ticketsRouter.get('/', requireVerified, (req, res) => {
@@ -259,13 +260,19 @@ ticketsRouter.get('/', requireVerified, (req, res) => {
       ? 't.scheduled_start DESC'
       : `CASE t.status WHEN 'in_progress' THEN 0 WHEN 'awaiting_report' THEN 1 WHEN 'scheduled' THEN 2 ELSE 3 END,
          CASE WHEN t.status IN ('scheduled','in_progress') THEN t.scheduled_start END ASC, t.scheduled_start DESC`;
-  const limit = Math.min(Number(q.limit) || 300, 1000);
+  const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  // Dengan ?page= hasil dipotong per halaman dan total ikut dikirim; tanpa page tetap daftar biasa (maks. limit).
+  const pg = pageParams(q);
+  const limitSql = pg ? `LIMIT ${pg.size} OFFSET ${pg.offset}` : `LIMIT ${Math.min(Number(q.limit) || 300, 1000)}`;
   const unread =
     viewer.role === 'admin' ? '0' : '(SELECT COUNT(*) FROM messages m WHERE m.ticket_id = t.id AND m.sender_id != ? AND m.read_at IS NULL)';
   const sql = `${SELECT.replace('FROM tickets t', `, ${unread} AS unread FROM tickets t`)}
-    ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY ${order} LIMIT ${limit}`;
+    ${whereSql} ORDER BY ${order} ${limitSql}`;
   const rows = db.prepare(sql).all(...(viewer.role === 'admin' ? params : [viewer.id, ...params])) as TicketRow[];
-  res.json({ tickets: rows.map((t) => serialize(t, viewer)) });
+  const tickets = rows.map((t) => serialize(t, viewer));
+  if (!pg) return res.json({ tickets });
+  const { n } = db.prepare(`SELECT COUNT(*) n FROM tickets t JOIN users e ON e.id = t.employee_id ${whereSql}`).get(...params) as { n: number };
+  res.json({ tickets, total: n, page: pg.page, pageSize: pg.size });
 });
 
 ticketsRouter.get('/:id', requireVerified, (req, res) => {

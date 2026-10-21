@@ -7,7 +7,8 @@ import { fmtDate, fmtTime, fullPsychName } from '@/lib/format';
 import type { Ticket } from '@/lib/types';
 import { Avatar, EmptyState, MODE_ICON, OutcomeChip, PageHeader, Segmented, StatusChip } from '@/components/ui';
 import { ListSkeleton } from '@/components/Skeletons';
-import { MODE_LABEL } from '@shared/constants';
+import { Pagination, SearchInput, matchText, useDebounced, usePaged } from '@/components/table';
+import { CLIENT_TOPICS, MODE_LABEL, MODES, type ClientTopic } from '@shared/constants';
 
 type Tab = 'upcoming' | 'done' | 'cancelled';
 const TABS: { value: Tab; label: string }[] = [
@@ -18,19 +19,37 @@ const TABS: { value: Tab; label: string }[] = [
 
 export default function Registrations() {
   const [tab, setTab] = useState<Tab>('upcoming');
+  const [q, setQ] = useState('');
+  const [mode, setMode] = useState('');
+  const search = useDebounced(q);
   const { data, isLoading } = useQuery({ queryKey: ['tickets', 'mine'], queryFn: () => api.get<{ tickets: Ticket[] }>('/tickets') });
   const all = data?.tickets ?? [];
-  const list = all.filter((t) =>
-    tab === 'upcoming' ? ['scheduled', 'in_progress'].includes(t.status) : tab === 'done' ? ['awaiting_report', 'completed', 'no_show'].includes(t.status) : t.status === 'cancelled',
+  const list = all.filter(
+    (t) =>
+      (tab === 'upcoming' ? ['scheduled', 'in_progress'].includes(t.status) : tab === 'done' ? ['awaiting_report', 'completed', 'no_show'].includes(t.status) : t.status === 'cancelled') &&
+      (!mode || t.mode === mode) &&
+      matchText(search, t.code, t.psychologist.name, CLIENT_TOPICS[t.topic as ClientTopic], fmtDate(t.scheduledStart, 'd MMMM yyyy')),
   );
   if (tab === 'upcoming') list.sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
+  const paged = usePaged(list, `${tab}|${search}|${mode}`, 10);
 
   return (
     <div className="animate-rise">
       <PageHeader title="Pendaftaran Saya" description="Semua jadwal konselingmu, hasil, dan tindak lanjutnya." actions={<Link to="/buat-janji" className="btn btn-primary"><Plus size={18} /> Buat janji</Link>} />
-      <Segmented className="mb-5" value={tab} onChange={setTab} options={TABS.map((t) => ({ ...t, label: `${t.label}` }))} />
+      <Segmented className="mb-4" value={tab} onChange={setTab} options={TABS.map((t) => ({ ...t, label: `${t.label}` }))} />
+      {all.length > 0 && (
+        <div className="mb-5 grid gap-2 sm:grid-cols-[1fr_200px]">
+          <SearchInput value={q} onChange={setQ} placeholder="Cari kode tiket, psikolog, topik, tanggal" label="Cari pendaftaran" />
+          <select className="input" value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Media">
+            <option value="">Semua media</option>
+            {MODES.map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+          </select>
+        </div>
+      )}
       {isLoading ? (
         <ListSkeleton header={false} avatar />
+      ) : list.length === 0 && (search || mode) ? (
+        <div className="card"><EmptyState title="Tidak ada yang cocok" description="Coba kata kunci atau filter lain." /></div>
       ) : list.length === 0 ? (
         <div className="card">
           <EmptyState
@@ -40,9 +59,12 @@ export default function Registrations() {
           />
         </div>
       ) : (
-        <div className="space-y-3">
-          {list.map((t) => <RegistrationCard key={t.id} t={t} />)}
-        </div>
+        <>
+          <div className="space-y-3">
+            {paged.pageItems.map((t) => <RegistrationCard key={t.id} t={t} />)}
+          </div>
+          <Pagination className="mt-4" page={paged.page} pageSize={paged.pageSize} total={paged.total} unit="pendaftaran" onPage={paged.setPage} onPageSize={paged.setPageSize} sizes={[10, 20, 50]} />
+        </>
       )}
     </div>
   );

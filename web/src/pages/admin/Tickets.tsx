@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Search } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { fmtDate, fmtTime } from '@/lib/format';
 import type { Psychologist, Ticket, Unit } from '@/lib/types';
 import { Avatar, EmptyState, ModeTag, OutcomeChip, PageHeader, ScreeningChip, StatusChip } from '@/components/ui';
 import { TableSkeleton } from '@/components/Skeletons';
+import { Pagination, SearchInput, useDebounced } from '@/components/table';
 import { CLIENT_TOPICS, MODE_LABEL, MODES, TICKET_STATUS_LABEL, type ClientTopic } from '@shared/constants';
 
 const TABS: { value: string; label: string }[] = [
@@ -26,20 +27,48 @@ export default function AdminTickets() {
   const mode = params.get('mode') ?? '';
   const unit = params.get('unit') ?? '';
   const psych = params.get('psychologist') ?? '';
+  const from = params.get('from') ?? '';
+  const to = params.get('to') ?? '';
+  const page = Math.max(1, Number(params.get('page')) || 1);
+  const pageSize = Number(params.get('size')) || 20;
+  // Semua filter disimpan di URL (bisa dibagikan & bertahan saat kembali dari detail); ganti filter → halaman 1.
   const set = (k: string, v: string) => {
     const next = new URLSearchParams(params);
     if (v || k === 'status') next.set(k, v);
     else next.delete(k);
+    if (k !== 'page') next.delete('page');
     setParams(next, { replace: true });
   };
+  const debouncedQ = useDebounced(q.trim());
+  useEffect(() => {
+    if (debouncedQ !== (params.get('q') ?? '')) set('q', debouncedQ);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQ]);
+  // Tanggal dipilih dalam WIB, dikirim sebagai waktu UTC.
+  const wibStart = (d: string, addDays = 0) => new Date(new Date(`${d}T00:00:00+07:00`).getTime() + addDays * 864e5).toISOString();
   const qs = new URLSearchParams({
     ...(status && { status }),
     ...(mode && { mode }),
     ...(unit && { unit }),
     ...(psych && { psychologist: psych }),
     ...(params.get('q') && { q: params.get('q')! }),
+    ...(from && { from: wibStart(from) }),
+    ...(to && { to: wibStart(to, 1) }),
+    page: String(page),
+    pageSize: String(pageSize),
   });
-  const { data, isLoading } = useQuery({ queryKey: ['tickets', 'admin', qs.toString()], queryFn: () => api.get<{ tickets: Ticket[] }>(`/tickets?${qs}`) });
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['tickets', 'admin', qs.toString()],
+    queryFn: () => api.get<{ tickets: Ticket[]; total: number }>(`/tickets?${qs}`),
+    placeholderData: keepPreviousData,
+  });
+  const filtered = !!(mode || unit || psych || from || to || params.get('q'));
+  const resetFilters = () => {
+    setQ('');
+    const next = new URLSearchParams();
+    next.set('status', status);
+    setParams(next, { replace: true });
+  };
   const { data: units } = useQuery({ queryKey: ['units-public'], queryFn: () => api.get<{ units: Unit[] }>('/meta/units') });
   const { data: psychs } = useQuery({ queryKey: ['psychologists'], queryFn: () => api.get<{ psychologists: Psychologist[] }>('/admin/psychologists') });
 
@@ -59,11 +88,8 @@ export default function AdminTickets() {
         ))}
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_170px_200px_220px]">
-        <form className="relative" onSubmit={(e) => { e.preventDefault(); set('q', q.trim()); }}>
-          <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input className="input pl-10" value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => set('q', q.trim())} placeholder="Cari kode, nama, PN" aria-label="Cari" />
-        </form>
+      <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_170px_200px_220px]">
+        <SearchInput value={q} onChange={setQ} placeholder="Cari kode, nama, PN, nama panggilan" />
         <select className="input" value={mode} onChange={(e) => set('mode', e.target.value)} aria-label="Media">
           <option value="">Semua media</option>
           {MODES.map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
@@ -77,13 +103,28 @@ export default function AdminTickets() {
           {units?.units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </div>
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <label className="grid gap-1 text-[12px] font-semibold text-ink-faint">
+          Jadwal dari
+          <input type="date" className="input h-10 w-[170px] text-sm" value={from} max={to || undefined} onChange={(e) => set('from', e.target.value)} />
+        </label>
+        <label className="grid gap-1 text-[12px] font-semibold text-ink-faint">
+          sampai
+          <input type="date" className="input h-10 w-[170px] text-sm" value={to} min={from || undefined} onChange={(e) => set('to', e.target.value)} />
+        </label>
+        {filtered && (
+          <button type="button" className="btn btn-ghost h-10 text-sm" onClick={resetFilters}>
+            <RotateCcw size={15} /> Reset filter
+          </button>
+        )}
+      </div>
 
       {isLoading ? (
         <TableSkeleton />
       ) : !data?.tickets.length ? (
         <div className="card"><EmptyState title="Tidak ada sesi" description="Tidak ada sesi yang cocok dengan filter ini." /></div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className={clsx('card overflow-hidden transition-opacity', isFetching && 'opacity-60')}>
           <table className="w-full">
             <thead className="hidden border-b border-line bg-canvas/60 lg:table-header-group">
               <tr>
@@ -127,6 +168,20 @@ export default function AdminTickets() {
             </tbody>
           </table>
         </div>
+      )}
+      {data && (
+        <Pagination
+          className="mt-4"
+          page={page}
+          pageSize={pageSize}
+          total={data.total}
+          unit="sesi"
+          onPage={(p) => {
+            set('page', String(p));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onPageSize={(n) => set('size', String(n))}
+        />
       )}
     </div>
   );

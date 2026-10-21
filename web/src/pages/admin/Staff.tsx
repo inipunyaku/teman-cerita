@@ -7,8 +7,9 @@ import { api, ApiError, errMsg } from '@/lib/api';
 import { revealInvalid } from '@/lib/validation';
 import { fullPsychName } from '@/lib/format';
 import type { Psychologist, User } from '@/lib/types';
-import { Avatar, Field, Modal, PageHeader, Segmented, Spinner } from '@/components/ui';
+import { Avatar, EmptyState, Field, Modal, PageHeader, Segmented, Spinner } from '@/components/ui';
 import { CardGridSkeleton, ListSkeleton } from '@/components/Skeletons';
+import { Pagination, SearchInput, matchText, usePaged } from '@/components/table';
 
 type Tab = 'psychologist' | 'admin';
 interface StaffForm {
@@ -37,6 +38,14 @@ export default function Staff() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['psychologists'] }); qc.invalidateQueries({ queryKey: ['admins'] }); toast.success('Status diperbarui.'); },
     onError: (e) => toast.error(errMsg(e)),
   });
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState<'all' | 'active' | 'disabled'>('all');
+  const statusOk = (s: string) => status === 'all' || (status === 'disabled') === (s === 'disabled');
+  const psychList = (psychs.data?.psychologists ?? []).filter((p) => statusOk(p.status) && matchText(q, p.name, p.email, p.specialization, p.approach));
+  const adminList = (admins.data?.users ?? []).filter((u) => statusOk(u.status) && matchText(q, u.name, u.email));
+  const psychPaged = usePaged(psychList, `${tab}|${q}|${status}`, 12);
+  const adminPaged = usePaged(adminList, `${tab}|${q}|${status}`);
+  const filtered = !!(q || status !== 'all');
   const blank: StaffForm = {
     role: tab, name: '', email: '', phone: '', title: tab === 'psychologist' ? 'S.Psi., Psikolog' : '', bio: '',
     specialization: '', approach: '', languages: 'Indonesia', meetingUrl: '', password: '',
@@ -49,12 +58,23 @@ export default function Staff() {
         description="Akun staf dibuat oleh admin dan langsung aktif. Profil psikolog tampil ke pekerja saat memilih jadwal."
         actions={<button className="btn btn-primary" onClick={() => setEditing(blank)}><Plus size={18} /> Tambah {tab === 'psychologist' ? 'psikolog' : 'admin'}</button>}
       />
-      <Segmented className="mb-5" value={tab} onChange={setTab} options={[{ value: 'psychologist', label: 'Psikolog' }, { value: 'admin', label: 'Admin' }]} />
+      <Segmented className="mb-4" value={tab} onChange={setTab} options={[{ value: 'psychologist', label: 'Psikolog' }, { value: 'admin', label: 'Admin' }]} />
+      <div className={`mb-5 grid gap-2 sm:grid-cols-[1fr_170px]`}>
+        <SearchInput value={q} onChange={setQ} placeholder={tab === 'psychologist' ? 'Cari nama, email, spesialisasi' : 'Cari nama atau email'} />
+        <select className="input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Status">
+          <option value="all">Semua status</option>
+          <option value="active">Aktif</option>
+          <option value="disabled">Nonaktif</option>
+        </select>
+      </div>
 
       {tab === 'psychologist' ? (
-        psychs.isLoading ? <CardGridSkeleton /> : (
+        psychs.isLoading ? <CardGridSkeleton /> : psychList.length === 0 ? (
+          <div className="card"><EmptyState title="Tidak ada psikolog" description={filtered ? 'Tidak ada psikolog yang cocok dengan pencarian atau filter ini.' : undefined} /></div>
+        ) : (
+          <>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {psychs.data?.psychologists.map((p) => (
+            {psychPaged.pageItems.map((p) => (
               <div key={p.id} className={`card card-pad flex flex-col ${p.status === 'disabled' ? 'opacity-60' : ''}`}>
                 <div className="flex items-start gap-3">
                   <Avatar name={p.name} src={p.avatarUrl} tone={p.avatarTone} size={48} />
@@ -91,10 +111,15 @@ export default function Staff() {
               </div>
             ))}
           </div>
+          <Pagination className="mt-4" page={psychPaged.page} pageSize={psychPaged.pageSize} total={psychPaged.total} unit="psikolog" onPage={psychPaged.setPage} onPageSize={psychPaged.setPageSize} sizes={[12, 24, 48]} />
+          </>
         )
-      ) : admins.isLoading ? <ListSkeleton header={false} avatar rows={2} /> : (
+      ) : admins.isLoading ? <ListSkeleton header={false} avatar rows={2} /> : adminList.length === 0 ? (
+        <div className="card"><EmptyState title="Tidak ada admin" description={filtered ? 'Tidak ada admin yang cocok dengan pencarian atau filter ini.' : undefined} /></div>
+      ) : (
+        <>
         <div className="card divide-y divide-line">
-          {admins.data?.users.map((u) => (
+          {adminPaged.pageItems.map((u) => (
             <div key={u.id} className="flex items-center gap-3 px-5 py-4">
               <Avatar name={u.name} src={u.avatarUrl} tone={u.avatarTone} size={40} />
               <div className="min-w-0 flex-1">
@@ -105,6 +130,8 @@ export default function Staff() {
             </div>
           ))}
         </div>
+        <Pagination className="mt-4" page={adminPaged.page} pageSize={adminPaged.pageSize} total={adminPaged.total} unit="admin" onPage={adminPaged.setPage} onPageSize={adminPaged.setPageSize} />
+        </>
       )}
       {editing && <StaffModal initial={editing} onClose={() => setEditing(null)} />}
     </div>

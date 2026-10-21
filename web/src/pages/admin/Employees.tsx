@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Download, Pencil, Plus, Search, Upload } from 'lucide-react';
+import { Download, Pencil, Plus, RotateCcw, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError, errMsg } from '@/lib/api';
 import { revealInvalid } from '@/lib/validation';
@@ -9,6 +9,7 @@ import { ageOf } from '@/lib/format';
 import type { Unit, User } from '@/lib/types';
 import { Avatar, EmptyState, Field, Modal, PageHeader, Spinner } from '@/components/ui';
 import { ListSkeleton } from '@/components/Skeletons';
+import { Pagination, SearchInput, useDebounced } from '@/components/table';
 import { GENDER_LABEL, type Gender } from '@shared/constants';
 
 interface Form {
@@ -35,13 +36,33 @@ export default function Employees() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'active' | 'disabled' | ''>('active');
   const [unit, setUnit] = useState('');
+  const [gender, setGender] = useState('');
+  const [band, setBand] = useState('');
+  const [region, setRegion] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [editing, setEditing] = useState<Form | null>(null);
   const [importing, setImporting] = useState(false);
   const { data: units } = useUnits();
-  const { data, isLoading } = useQuery({
-    queryKey: ['employees', status, unit, q],
-    queryFn: () => api.get<{ users: User[] }>(`/admin/employees?status=${status}&unit=${unit}&q=${encodeURIComponent(q)}`),
+  const search = useDebounced(q.trim());
+  // Filter/pencarian berubah → kembali ke halaman 1.
+  useEffect(() => setPage(1), [search, status, unit, gender, band, region, pageSize]);
+  const qs = new URLSearchParams({ status, unit, gender, band, region, q: search, page: String(page), pageSize: String(pageSize) });
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['employees', qs.toString()],
+    queryFn: () =>
+      api.get<{ users: User[]; total: number; facets?: { bands: string[]; regions: string[] } }>(`/admin/employees?${qs}`),
+    placeholderData: keepPreviousData,
   });
+  const filtered = !!(search || unit || gender || band || region || status !== 'active');
+  const resetFilters = () => {
+    setQ('');
+    setStatus('active');
+    setUnit('');
+    setGender('');
+    setBand('');
+    setRegion('');
+  };
   const toggle = useMutation({
     mutationFn: ({ id, active }: { id: number; active: boolean }) => api.post(`/admin/users/${id}/status`, { active }),
     onSuccess: () => { toast.success('Status pekerja diperbarui.'); qc.invalidateQueries({ queryKey: ['employees'] }); },
@@ -60,11 +81,8 @@ export default function Employees() {
           </>
         }
       />
-      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_160px_240px]">
-        <div className="relative">
-          <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input className="input pl-10" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama, PN, email" aria-label="Cari pekerja" />
-        </div>
+      <div className="mb-2 grid gap-2 sm:grid-cols-[1fr_160px_240px]">
+        <SearchInput value={q} onChange={setQ} placeholder="Cari nama, PN, email" label="Cari pekerja" />
         <select className="input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Status">
           <option value="active">Aktif</option>
           <option value="disabled">Nonaktif</option>
@@ -75,14 +93,38 @@ export default function Employees() {
           {units?.units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </div>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <select className="input h-10 text-sm sm:w-44" value={gender} onChange={(e) => setGender(e.target.value)} aria-label="Jenis kelamin">
+          <option value="">Semua jenis kelamin</option>
+          {(Object.keys(GENDER_LABEL) as Gender[]).map((g) => <option key={g} value={g}>{GENDER_LABEL[g]}</option>)}
+        </select>
+        <select className="input h-10 text-sm sm:w-36" value={band} onChange={(e) => setBand(e.target.value)} aria-label="Band">
+          <option value="">Semua band</option>
+          {data?.facets?.bands.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+        <select className="input h-10 text-sm sm:w-48" value={region} onChange={(e) => setRegion(e.target.value)} aria-label="Region">
+          <option value="">Semua region</option>
+          {data?.facets?.regions.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+        {filtered && (
+          <button type="button" className="btn btn-ghost h-10 text-sm" onClick={resetFilters}>
+            <RotateCcw size={15} /> Reset filter
+          </button>
+        )}
+      </div>
 
       {isLoading ? (
         <ListSkeleton header={false} avatar />
       ) : !data?.users.length ? (
-        <div className="card"><EmptyState title="Tidak ada pekerja" description="Tambahkan pekerja atau impor dari file CSV." /></div>
+        <div className="card">
+          {filtered ? (
+            <EmptyState title="Tidak ada yang cocok" description="Tidak ada pekerja yang cocok dengan pencarian atau filter ini." />
+          ) : (
+            <EmptyState title="Tidak ada pekerja" description="Tambahkan pekerja atau impor dari file CSV." />
+          )}
+        </div>
       ) : (
-        <div className="card overflow-hidden">
-          <p className="border-b border-line px-5 py-2.5 text-[12.5px] text-ink-faint">{data.users.length} pekerja</p>
+        <div className={clsx('card overflow-hidden transition-opacity', isFetching && 'opacity-60')}>
           <table className="w-full">
             <thead className="hidden border-b border-line bg-canvas/60 md:table-header-group">
               <tr>
@@ -127,6 +169,9 @@ export default function Employees() {
             </tbody>
           </table>
         </div>
+      )}
+      {data && (
+        <Pagination className="mt-4" page={page} pageSize={pageSize} total={data.total} unit="pekerja" onPage={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onPageSize={setPageSize} />
       )}
       {editing && <EmployeeModal initial={editing} units={units?.units ?? []} onClose={() => setEditing(null)} />}
       {importing && <ImportModal onClose={() => setImporting(false)} />}

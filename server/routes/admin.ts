@@ -6,7 +6,7 @@ import { publicUser, requireRole, type UserRow } from '../auth.js';
 import { publish } from '../events.js';
 import { passwordSchema } from './auth.js';
 import { wibIso, wibToday, addDays } from '../scheduling.js';
-import { fail, intParam, parse } from '../util.js';
+import { fail, intParam, parse, pageParams } from '../util.js';
 
 export const adminRouter = Router();
 adminRouter.use(requireRole('admin'));
@@ -80,17 +80,27 @@ adminRouter.get('/employees', (req, res) => {
   if (q.status === 'active') where.push(`u.status = 'verified'`);
   else if (q.status === 'disabled') where.push(`u.status != 'verified'`);
   if (q.unit) where.push('u.unit_id = ?'), params.push(Number(q.unit));
+  for (const k of ['gender', 'band', 'region'] as const) {
+    if (q[k]) where.push(`u.${k} = ?`), params.push(q[k]);
+  }
   if (q.q) {
     where.push('(u.name LIKE ? OR u.email LIKE ? OR u.pn LIKE ? OR u.nickname LIKE ?)');
     params.push(...Array(4).fill(`%${q.q}%`));
   }
+  const pg = pageParams(q);
   const rows = db
     .prepare(
       `SELECT u.*, (SELECT COUNT(*) FROM tickets t WHERE t.employee_id = u.id AND t.status != 'cancelled') AS ticket_count
-       FROM users u WHERE ${where.join(' AND ')} ORDER BY u.name LIMIT 1000`,
+       FROM users u WHERE ${where.join(' AND ')} ORDER BY u.name ${pg ? `LIMIT ${pg.size} OFFSET ${pg.offset}` : 'LIMIT 1000'}`,
     )
     .all(...params) as (UserRow & { ticket_count: number })[];
-  res.json({ users: rows.map((u) => ({ ...publicUser(u), ticketCount: u.ticket_count })) });
+  const users = rows.map((u) => ({ ...publicUser(u), ticketCount: u.ticket_count }));
+  if (!pg) return res.json({ users });
+  const { n } = db.prepare(`SELECT COUNT(*) n FROM users u WHERE ${where.join(' AND ')}`).get(...params) as { n: number };
+  // Pilihan filter band/region diambil dari data pekerja yang ada.
+  const distinct = (col: 'band' | 'region') =>
+    (db.prepare(`SELECT DISTINCT ${col} v FROM users WHERE role = 'employee' AND ${col} IS NOT NULL AND ${col} != '' ORDER BY ${col}`).all() as { v: string }[]).map((r) => r.v);
+  res.json({ users, total: n, page: pg.page, pageSize: pg.size, facets: { bands: distinct('band'), regions: distinct('region') } });
 });
 
 adminRouter.post('/employees', (req, res) => {

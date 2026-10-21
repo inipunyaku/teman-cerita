@@ -5,16 +5,31 @@ import { toast } from 'sonner';
 import { api, errMsg } from '@/lib/api';
 import { revealInvalid } from '@/lib/validation';
 import type { Unit } from '@/lib/types';
-import { Field, Modal, PageHeader, Spinner } from '@/components/ui';
+import { EmptyState, Field, Modal, PageHeader, Spinner } from '@/components/ui';
 import { TableSkeleton } from '@/components/Skeletons';
+import { Pagination, SearchInput, matchText, usePaged } from '@/components/table';
 
 export default function Units() {
   const [editing, setEditing] = useState<Partial<Unit> | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['units-admin'], queryFn: () => api.get<{ units: Unit[] }>('/admin/units') });
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const list = (data?.units ?? []).filter((u) => (status === 'all' || (status === 'active') === !!u.active) && matchText(q, u.name, u.code));
+  const paged = usePaged(list, `${q}|${status}`);
   return (
     <div className="animate-rise">
       <PageHeader title="Unit kerja" description="Unit kerja pada master data pekerja dan laporan dashboard." actions={<button className="btn btn-primary" onClick={() => setEditing({ name: '', code: '', active: 1 })}><Plus size={18} /> Tambah unit</button>} />
-      {isLoading ? <TableSkeleton rows={5} /> : (
+      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px]">
+        <SearchInput value={q} onChange={setQ} placeholder="Cari nama atau kode unit" label="Cari unit" />
+        <select className="input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Status">
+          <option value="all">Semua status</option>
+          <option value="active">Aktif</option>
+          <option value="inactive">Nonaktif</option>
+        </select>
+      </div>
+      {isLoading ? <TableSkeleton rows={5} /> : list.length === 0 ? (
+        <div className="card"><EmptyState title="Tidak ada unit" description={q || status !== 'all' ? 'Tidak ada unit yang cocok dengan pencarian atau filter ini.' : undefined} /></div>
+      ) : (
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead className="border-b border-line bg-canvas/60">
@@ -27,7 +42,7 @@ export default function Units() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {data?.units.map((u) => (
+              {paged.pageItems.map((u) => (
                 <tr key={u.id} className={u.active ? '' : 'text-ink-faint'}>
                   <td className="px-5 py-3.5 text-sm font-semibold">{u.name}{!u.active && <span className="chip ml-2 bg-canvas text-ink-faint">nonaktif</span>}</td>
                   <td className="hidden px-3 py-3.5 font-mono text-[12.5px] sm:table-cell">{u.code}</td>
@@ -40,6 +55,7 @@ export default function Units() {
           </table>
         </div>
       )}
+      <Pagination className="mt-4" page={paged.page} pageSize={paged.pageSize} total={paged.total} unit="unit" onPage={paged.setPage} onPageSize={paged.setPageSize} />
       {editing && <UnitModal unit={editing} onClose={() => setEditing(null)} />}
     </div>
   );

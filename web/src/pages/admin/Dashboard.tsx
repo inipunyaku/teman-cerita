@@ -9,6 +9,7 @@ import { fmtDate } from '@/lib/format';
 import { Avatar, PageHeader, Segmented, Stat } from '@/components/ui';
 import { StatsSkeleton } from '@/components/Skeletons';
 import { CASE_CATEGORIES, GENDER_LABEL, MODE_LABEL, SCREENING_LEVEL_LABEL, SCREENING_LEVELS, type CaseCategory, type Gender, type Mode, type ScreeningLevel } from '@shared/constants';
+import { Pagination, SearchInput, matchText, usePaged } from '@/components/table';
 
 type KV = { key: string; value: number };
 type Cross = { group: string; values: Record<string, number>; total?: number };
@@ -417,11 +418,31 @@ function BreakdownPanel({ title, data, keys, label, color, unit }: { title: stri
 }
 
 function PsychPanel({ rows }: { rows: Stats['psychologists'] }) {
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<'all' | 'low' | 'noslot' | 'upcoming'>('all');
+  const list = rows.filter(
+    (p) =>
+      matchText(q, p.name, p.title) &&
+      (filter === 'all' ||
+        (filter === 'low' && p.slots > 0 && (p.utilization ?? 0) < 50) ||
+        (filter === 'noslot' && p.slots === 0) ||
+        (filter === 'upcoming' && p.upcoming > 0)),
+  );
+  const paged = usePaged(list, `${q}|${filter}`, 10);
   return (
     <section className="card overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 pt-5 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 sm:px-6">
         <p className="text-[13px] text-ink-faint">Slot = kapasitas sesi dari blok ketersediaan (maks. 4 sesi/hari, jeda 30 menit).</p>
         <Link to="/admin/ketersediaan" className="btn btn-soft btn-sm shrink-0"><CalendarRange size={15} /> Jadwal & ketersediaan</Link>
+      </div>
+      <div className="mt-3 grid gap-2 px-5 sm:grid-cols-[1fr_220px] sm:px-6">
+        <SearchInput value={q} onChange={setQ} placeholder="Cari nama psikolog" label="Cari psikolog" />
+        <select className="input" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} aria-label="Saring psikolog">
+          <option value="all">Semua psikolog</option>
+          <option value="low">Utilisasi di bawah 50%</option>
+          <option value="noslot">Belum membuka slot</option>
+          <option value="upcoming">Punya sesi akan datang</option>
+        </select>
       </div>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[760px]">
@@ -437,7 +458,12 @@ function PsychPanel({ rows }: { rows: Stats['psychologists'] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {rows.map((p) => (
+            {paged.pageItems.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-6 py-8 text-center text-sm text-ink-faint">Tidak ada psikolog yang cocok.</td>
+              </tr>
+            )}
+            {paged.pageItems.map((p) => (
               <tr key={p.id}>
                 <td className="px-5 py-3 sm:px-6">
                   <div className="flex items-center gap-3">
@@ -464,6 +490,7 @@ function PsychPanel({ rows }: { rows: Stats['psychologists'] }) {
           </tbody>
         </table>
       </div>
+      <Pagination className="border-t border-line px-5 py-3 sm:px-6" page={paged.page} pageSize={paged.pageSize} total={paged.total} unit="psikolog" onPage={paged.setPage} onPageSize={paged.setPageSize} sizes={[10, 20, 50]} />
     </section>
   );
 }
