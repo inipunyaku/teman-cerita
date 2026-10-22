@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { RotateCcw } from 'lucide-react';
-import { api } from '@/lib/api';
+import { FileSpreadsheet, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, errMsg } from '@/lib/api';
+import { downloadScreeningExcel } from '@/lib/export';
 import { fmtDate, fmtTime } from '@/lib/format';
 import type { Psychologist, Ticket, Unit } from '@/lib/types';
-import { Avatar, EmptyState, ModeTag, OutcomeChip, PageHeader, ScreeningChip, StatusChip } from '@/components/ui';
+import { Avatar, EmptyState, ModeTag, OutcomeChip, PageHeader, ScreeningChip, Spinner, StatusChip } from '@/components/ui';
 import { TableSkeleton } from '@/components/Skeletons';
 import { Pagination, SearchInput, useDebounced } from '@/components/table';
 import { CLIENT_TOPICS, MODE_LABEL, MODES, TICKET_STATUS_LABEL, type ClientTopic } from '@shared/constants';
@@ -46,6 +48,7 @@ export default function AdminTickets() {
   }, [debouncedQ]);
   // Tanggal dipilih dalam WIB, dikirim sebagai waktu UTC.
   const wibStart = (d: string, addDays = 0) => new Date(new Date(`${d}T00:00:00+07:00`).getTime() + addDays * 864e5).toISOString();
+  // Filter yang sama dipakai daftar & unduhan Excel.
   const qs = new URLSearchParams({
     ...(status && { status }),
     ...(mode && { mode }),
@@ -54,12 +57,13 @@ export default function AdminTickets() {
     ...(params.get('q') && { q: params.get('q')! }),
     ...(from && { from: wibStart(from) }),
     ...(to && { to: wibStart(to, 1) }),
-    page: String(page),
-    pageSize: String(pageSize),
   });
+  const listQs = new URLSearchParams(qs);
+  listQs.set('page', String(page));
+  listQs.set('pageSize', String(pageSize));
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['tickets', 'admin', qs.toString()],
-    queryFn: () => api.get<{ tickets: Ticket[]; total: number }>(`/tickets?${qs}`),
+    queryKey: ['tickets', 'admin', listQs.toString()],
+    queryFn: () => api.get<{ tickets: Ticket[]; total: number }>(`/tickets?${listQs}`),
     placeholderData: keepPreviousData,
   });
   const filtered = !!(mode || unit || psych || from || to || params.get('q'));
@@ -69,12 +73,32 @@ export default function AdminTickets() {
     next.set('status', status);
     setParams(next, { replace: true });
   };
+  const [exporting, setExporting] = useState(false);
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      const n = await downloadScreeningExcel(qs);
+      toast.success(n ? `${n} sesi diunduh.` : 'Tidak ada sesi untuk filter ini; file berisi judul kolom saja.');
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setExporting(false);
+    }
+  };
   const { data: units } = useQuery({ queryKey: ['units-public'], queryFn: () => api.get<{ units: Unit[] }>('/meta/units') });
   const { data: psychs } = useQuery({ queryKey: ['psychologists'], queryFn: () => api.get<{ psychologists: Psychologist[] }>('/admin/psychologists') });
 
   return (
     <div className="animate-rise">
-      <PageHeader title="Sesi konseling" description="Semua pendaftaran yang dibuat pekerja. Admin dapat memindahkan jadwal atau membatalkan sesi bila diperlukan." />
+      <PageHeader
+        title="Sesi konseling"
+        description="Semua pendaftaran yang dibuat pekerja. Admin dapat memindahkan jadwal atau membatalkan sesi bila diperlukan."
+        actions={
+          <button type="button" className="btn btn-secondary" onClick={exportExcel} disabled={exporting} title="Skrining awal & catatan untuk klien, sesuai filter">
+            {exporting ? <Spinner /> : <FileSpreadsheet size={17} />} Unduh Excel
+          </button>
+        }
+      />
 
       <div className="scrollbar-thin -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         {TABS.map((t) => (

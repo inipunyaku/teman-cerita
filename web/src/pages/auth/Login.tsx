@@ -11,6 +11,8 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { useWelcomeSplash } from '@/components/WelcomeSplash';
 import logo from '@/assets/auth/logo-brilian.webp';
 
+/** Tombol login cepat akun demo di halaman masuk (hanya mode pengembangan). */
+const SHOW_DEMO = false;
 const DEMO = [
   { label: 'Pekerja', id: '90001234' },
   { label: 'Psikolog', id: 'psikolog@temancerita.id' },
@@ -87,9 +89,9 @@ export default function Login() {
         </button>
       </form>
 
-      {/* Ruang kosong di bawah tombol sesuai desain; akun demo hanya tampil saat pengembangan. */}
+      {/* Ruang kosong di bawah tombol sesuai desain; kotak akun demo disembunyikan (ubah SHOW_DEMO untuk menampilkan lagi). */}
       <div className="min-h-[45px] pt-6">
-        {import.meta.env.DEV && (
+        {SHOW_DEMO && import.meta.env.DEV && (
           <div className="rounded-3xl border border-dashed border-sky-200 bg-sky-50/50 p-4">
             <div className="flex items-baseline justify-between">
               <span className="eyebrow text-sky-700/80">Akun demo</span>

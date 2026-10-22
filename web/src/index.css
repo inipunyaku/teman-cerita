@@ -405,3 +405,32 @@
     font-size: 16px !important;
   }
 }
+
+/*
+ * Desktop: judul, nama, dan angka memakai huruf yang sama dengan isi (Onest) supaya tidak jomplang.
+ * Serif miring hanya dipertahankan untuk kutipan/pesan (.quote).
+ */
+@media (min-width: 1024px) {
+  .display:not(.quote),
+  .font-display {
+    font-family: theme('fontFamily.sans');
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .font-display .italic {
+    font-style: normal;
+  }
+  /* Kata yang disorot di dalam judul ikut ukuran judulnya. */
+  :is(h1, h2, h3) .display:not(.quote) {
+    font-size: inherit;
+    line-height: inherit;
+  }
+  .display.quote {
+    font-family: theme('fontFamily.sans');
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+}

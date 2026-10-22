@@ -145,6 +145,8 @@ export interface HistoryItem {
   mode: Mode;
   psychologistName: string;
   outcome: Outcome | null;
+  /** Halaman peserta: sesi ini ditangani psikolog yang sedang melihat. */
+  own?: boolean;
   /** Hanya untuk psikolog: konteks klinis sesi sebelumnya (termasuk dari psikolog lain). */
   topic?: string;
   screening?: number[];

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, CalendarRange, ChartNoAxesColumn, Building2, Headset, LayoutGrid, Stethoscope, Users } from 'lucide-react';
+import { CalendarDays, CalendarRange, ChartNoAxesColumn, Building2, Contact, Headset, LayoutGrid, Stethoscope, Users } from 'lucide-react';
 import { TalkIcon } from './components/icons';
 import { api } from './lib/api';
 import { homeFor, useAuth } from './lib/auth';
@@ -26,6 +26,8 @@ const pages = {
   PsychDashboard: () => import('./pages/psych/Dashboard'),
   Sessions: () => import('./pages/psych/Sessions'),
   SessionDetail: () => import('./pages/psych/SessionDetail'),
+  Clients: () => import('./pages/psych/Clients'),
+  ClientDetail: () => import('./pages/psych/ClientDetail'),
   AdminTickets: () => import('./pages/admin/Tickets'),
   AdminTicketDetail: () => import('./pages/admin/TicketDetail'),
   Employees: () => import('./pages/admin/Employees'),
@@ -44,6 +46,8 @@ const NotFound = lazy(pages.NotFound);
 const PsychDashboard = lazy(pages.PsychDashboard);
 const Sessions = lazy(pages.Sessions);
 const SessionDetail = lazy(pages.SessionDetail);
+const Clients = lazy(pages.Clients);
+const ClientDetail = lazy(pages.ClientDetail);
 const AdminTickets = lazy(pages.AdminTickets);
 const AdminTicketDetail = lazy(pages.AdminTicketDetail);
 const Employees = lazy(pages.Employees);
@@ -54,7 +58,7 @@ const AdminDashboard = lazy(pages.AdminDashboard);
 
 const PRELOAD: Record<string, (keyof typeof pages)[]> = {
   employee: ['Home', 'Booking', 'Registrations', 'RegistrationDetail', 'Profile'],
-  psychologist: ['PsychDashboard', 'Sessions', 'SessionDetail', 'Availability', 'Profile'],
+  psychologist: ['PsychDashboard', 'Sessions', 'SessionDetail', 'Clients', 'ClientDetail', 'Availability', 'Profile'],
   admin: ['AdminDashboard', 'AdminTickets', 'AdminTicketDetail', 'Availability', 'Employees', 'Staff', 'Units', 'AdminSupport', 'Profile'],
 };
 
@@ -110,6 +114,7 @@ function PsychShell() {
       nav={[
         { to: '/psikolog', label: 'Beranda', icon: LayoutGrid, end: true },
         { to: '/psikolog/sesi', label: 'Sesi saya', icon: CalendarDays },
+        { to: '/psikolog/peserta', label: 'Peserta', icon: Contact },
         { to: '/psikolog/ketersediaan', label: 'Jadwal & ketersediaan', icon: CalendarRange },
       ]}
     />
@@ -143,6 +148,8 @@ export default function App() {
           <Route index element={<PsychDashboard />} />
           <Route path="sesi" element={<Sessions />} />
           <Route path="sesi/:id" element={<SessionDetail />} />
+          <Route path="peserta" element={<Clients />} />
+          <Route path="peserta/:id" element={<ClientDetail />} />
           <Route path="ketersediaan" element={<Availability />} />
           <Route path="profil" element={<Profile />} />
         </Route>

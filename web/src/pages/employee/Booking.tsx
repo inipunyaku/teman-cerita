@@ -179,7 +179,7 @@ export default function Booking() {
 
   const wide = draft.step === 4;
   return (
-    <div ref={topRef} className={clsx('mx-auto animate-rise scroll-mt-24', wide ? 'max-w-6xl' : 'max-w-3xl')}>
+    <div ref={topRef} className={clsx('mx-auto animate-rise scroll-mt-24', wide ? 'max-w-6xl xl:max-w-7xl' : 'max-w-3xl lg:max-w-5xl')}>
       <Stepper step={draft.step} />
 
       {draft.step === 0 && <ConsentStep onAgree={() => go(1)} onDecline={() => setDeclined(true)} />}

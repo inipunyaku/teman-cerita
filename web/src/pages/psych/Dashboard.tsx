@@ -65,7 +65,7 @@ export default function PsychDashboard() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-ink-soft">{greeting()},</p>
-          <h1 className="text-[32px] font-semibold leading-tight tracking-tight">
+          <h1 className="text-[32px] font-semibold leading-tight tracking-tight lg:text-[28px]">
             <span className="display text-[40px] italic text-sky-700">{firstName(user!.name)}</span>
             <span className="text-ink-faint">.</span> {remaining ? `Ada ${remaining} sesi lagi hari ini.` : 'Tidak ada sesi lagi hari ini.'}
           </h1>

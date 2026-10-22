@@ -59,7 +59,7 @@ export function GreetingHero({
           )}
         </div>
 
-        <h1 className="mt-[26px] break-words font-display text-[38px] leading-[0.98] tracking-[-0.01em] sm:text-[48px]">
+        <h1 className="mt-[26px] break-words font-display text-[38px] leading-[0.98] tracking-[-0.01em] sm:text-[48px] lg:text-[36px]">
           {isBirthday ? 'Selamat ulang tahun' : greeting}
           <span className="italic">
             , <span className="text-[#4690F5]">{name}</span>
@@ -252,7 +252,7 @@ export function SelfCare({ userId, part, now, breatheSignal }: { userId: number;
     <section className="card card-pad relative overflow-hidden shadow-soft">
       <img src={windowArt} alt="" width={130} height={172} className="pointer-events-none absolute right-[23px] top-[21px] hidden sm:block" />
       <p className="relative text-[13px] font-semibold leading-normal text-brand">Untukmu {part} ini</p>
-      <h2 className="relative mt-1 font-brand text-[24px] font-bold leading-[1.2] sm:text-[26px]">{care.title}</h2>
+      <h2 className={clsx(cardTitle, 'relative mt-1')}>{care.title}</h2>
       <ul className="relative mt-3 w-full max-w-[380px] space-y-1.5">
         {care.tips.map((t, i) => {
           const on = done.includes(i);
@@ -382,7 +382,7 @@ export function Affirmation({ seed }: { seed: number }) {
       <Sparkle size={14} {...sparkle} className="pointer-events-none absolute right-[15px] top-[57px] text-white opacity-90" />
       <Sparkle size={12} {...sparkle} className="pointer-events-none absolute bottom-[29px] right-[83px] text-white opacity-90" />
       <p className="relative text-[13px] font-semibold leading-normal text-ink-soft">Pesan untukmu hari ini</p>
-      <p className="display relative mt-2.5 text-[27px] italic leading-[1.3] text-sky-900 sm:text-[30px]">“{text}”</p>
+      <p className="display quote relative mt-2.5 text-[27px] italic leading-[1.3] text-sky-900 sm:text-[30px] lg:text-[22px]">“{text}”</p>
     </section>
   );
 }

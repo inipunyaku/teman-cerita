@@ -28,7 +28,7 @@ describe('chat bantuan', () => {
       [false, false],
       [true, true],
     ]);
-    expect(me.messages[1].body).toContain('±5 menit');
+    expect(me.messages[1].body).toContain('Mohon tunggu sebentar');
     expect(me.unread).toBe(1);
     expect(me.thread).toMatchObject({ name: 'Tamu Uji', pn: '7770001' });
 

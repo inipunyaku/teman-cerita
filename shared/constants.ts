@@ -341,7 +341,7 @@ export const SUPPORT_DEFAULTS: SupportSettings = {
   responseMinutes: 5,
   waitMinutes: 10,
   greeting:
-    'Terima kasih sudah menghubungi Admin Teman Cerita 🙏 Mohon tunggu sebentar ya, admin akan membalas dalam ±{waktu_respons} menit.',
+    'Terima kasih sudah menghubungi Admin Teman Cerita 🙏 Mohon tunggu sebentar ya.',
   unavailable:
     'Mohon maaf, admin sedang tidak tersedia saat ini. Pesanmu sudah kami terima dan akan dibalas secepatnya begitu admin kembali. 💙',
 };

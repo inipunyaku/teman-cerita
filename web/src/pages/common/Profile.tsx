@@ -126,7 +126,7 @@ export default function Profile() {
             <div className="min-w-0 flex-1 pb-1">
               <p className="truncate text-xl font-semibold">{u.name}</p>
               {u.statusText ? (
-                <p className="display truncate text-[22px] italic text-sky-700">“{u.statusText}”</p>
+                <p className="display quote truncate text-[22px] italic text-sky-700 lg:text-[18px]">“{u.statusText}”</p>
               ) : (
                 <p className="text-sm text-ink-faint">Belum ada status</p>
               )}

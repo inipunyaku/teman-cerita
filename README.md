@@ -19,7 +19,7 @@ npm run dev           # API :3410 + web :5173
 ## Akun demo (password `demo1234`)
 | Peran | Login |
 |---|---|
-| Pekerja | PN `90001234` (atau karyawan@temancerita.id) |
+| Pekerja | PN `90001234` (atau 90001234@bri.co.id) |
 | Psikolog | psikolog@temancerita.id (juga psikolog2@ s.d. psikolog4@) |
 | Admin | admin@temancerita.id |
 

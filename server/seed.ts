@@ -138,7 +138,7 @@ tx(() => {
   const birth = (age: number) => `${new Date().getFullYear() - age}-${String(1 + Math.floor(rand() * 12)).padStart(2, '0')}-${String(1 + Math.floor(rand() * 28)).padStart(2, '0')}`;
 
   const demo = user({
-    role: 'employee', name: 'Rani Kusumawardani', nickname: 'Rani', email: 'karyawan@temancerita.id', pn: '90001234', phone: '081234567890',
+    role: 'employee', name: 'Rani Kusumawardani', nickname: 'Rani', email: '90001234@bri.co.id', pn: '90001234', phone: '081234567890',
     unit: unitId.TI, band: 'Band 3', region: unitRegion.TI, gender: 'P', birth: '1996-04-12', tone: 'lilac', statusText: 'Lagi belajar istirahat',
   });
 
@@ -156,7 +156,7 @@ tx(() => {
   Array.from({ length: 240 }, (_, i) => FIRST[i % FIRST.length]).forEach(([first, gender], i) => {
     const unit = weighted(Object.entries(unitWeight));
     const id = user({
-      role: 'employee', name: `${first} ${pick(LAST)}`, nickname: first, email: `${first.toLowerCase()}${i}@temancerita.id`,
+      role: 'employee', name: `${first} ${pick(LAST)}`, nickname: first, email: `${90010000 + i * 37}@bri.co.id`,
       pn: String(90010000 + i * 37), phone: `0812${String(30000000 + i * 1291).slice(0, 8)}`, unit: unitId[unit], region: unitRegion[unit],
       band: weighted(BANDS.map((b, k) => [b, [2, 5, 6, 3, 1][k]] as [string, number])), gender, birth: birth(23 + Math.floor(rand() * 33)),
     });

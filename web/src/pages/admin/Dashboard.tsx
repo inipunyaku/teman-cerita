@@ -223,7 +223,7 @@ function Rate({ label, value, hint, meter }: { label: string; value: number | nu
   return (
     <div className="card card-pad">
       <p className="text-[13px] text-ink-soft">{label}</p>
-      <p className="display mt-2 text-[34px] tabular-nums text-ink">{pct(value)}</p>
+      <p className="display mt-2 text-[34px] tabular-nums lg:text-[28px] text-ink">{pct(value)}</p>
       {meter && (
         <div className="mt-2 h-1.5 rounded-full bg-canvas">
           <div className="h-full rounded-full" style={{ width: `${Math.min(100, value ?? 0)}%`, background: SERIES }} />
@@ -238,7 +238,7 @@ function Tile({ label, value, to, warn }: { label: string; value: number; to?: s
   const body = (
     <>
       <p className="text-[13px] text-ink-soft">{label}</p>
-      <p className={clsx('display mt-1.5 text-[34px] tabular-nums', warn ? 'text-sun-700' : 'text-ink')}>{num(value)}</p>
+      <p className={clsx('display mt-1.5 text-[34px] tabular-nums lg:text-[28px]', warn ? 'text-sun-700' : 'text-ink')}>{num(value)}</p>
     </>
   );
   return to ? (

@@ -245,7 +245,7 @@ export function PageHeader({
     <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight sm:text-[32px]">{title}</h1>
+        <h1 className="text-[28px] font-semibold leading-tight tracking-tight sm:text-[32px] lg:text-[28px]">{title}</h1>
         {description && <p className="mt-1.5 max-w-2xl text-ink-soft">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
@@ -444,7 +444,7 @@ export function Stat({
         )}
         {label}
       </div>
-      <div className="display mt-2 text-[40px] tabular-nums text-ink">{value}</div>
+      <div className="display mt-2 text-[40px] tabular-nums lg:text-[28px] text-ink">{value}</div>
       {hint && <div className="mt-1 text-[12.5px] text-ink-faint">{hint}</div>}
     </div>
   );

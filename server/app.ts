@@ -13,6 +13,7 @@ import { ticketsRouter } from './routes/tickets.js';
 import { bookingRouter } from './routes/booking.js';
 import { availabilityRouter } from './routes/availability.js';
 import { adminRouter } from './routes/admin.js';
+import { psychRouter } from './routes/psych.js';
 import { statsRouter } from './routes/stats.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { supportRouter } from './routes/support.js';
@@ -73,6 +74,7 @@ export function createApp() {
   app.use('/api/booking', bookingRouter);
   app.use('/api/availability', availabilityRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/psych', psychRouter);
   app.use('/api/stats', statsRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/support', supportRouter);

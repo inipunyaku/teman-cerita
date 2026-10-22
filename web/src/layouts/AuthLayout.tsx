@@ -14,7 +14,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         {/* Selubung putih agar judul tetap terbaca di atas ilustrasi */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[460px] bg-gradient-to-b from-white/55 to-white/0" />
         <div className="relative -ml-3 mt-[89px] max-w-[448px]">
-          <p className="display text-[56px] text-sky-900">
+          <p className="display text-[44px] text-sky-900">
             Nggak semua hal
             <br />
             harus kamu

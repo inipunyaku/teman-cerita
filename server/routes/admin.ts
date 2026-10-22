@@ -293,3 +293,41 @@ adminRouter.patch('/units/:id', (req, res) => {
   if (!r.changes) fail(404, 'Unit tidak ditemukan.');
   res.json({ ok: true });
 });
+
+// ---------------------------------------------------------------------------
+// Data untuk unduhan Excel — skrining awal & catatan untuk klien saja (tanpa catatan klinis lain).
+
+const EXPORT_GROUPS: Record<string, string[]> = {
+  upcoming: ['scheduled', 'in_progress'],
+  done: ['awaiting_report', 'completed', 'no_show'],
+  history: ['completed', 'no_show', 'cancelled'],
+};
+
+adminRouter.get('/export/screening', (req, res) => {
+  const q = req.query as Record<string, string | undefined>;
+  const where: string[] = [];
+  const params: unknown[] = [];
+  const statuses = q.status ? (EXPORT_GROUPS[q.status] ?? [q.status]) : [];
+  if (statuses.length) where.push(`t.status IN (${statuses.map(() => '?').join(',')})`), params.push(...statuses);
+  if (q.mode) where.push('t.mode = ?'), params.push(q.mode);
+  if (q.unit) where.push('t.unit_id = ?'), params.push(Number(q.unit));
+  if (q.psychologist) where.push('t.psychologist_id = ?'), params.push(Number(q.psychologist));
+  if (q.from) where.push('t.scheduled_start >= ?'), params.push(q.from);
+  if (q.to) where.push('t.scheduled_start < ?'), params.push(q.to);
+  if (q.q) {
+    where.push('(t.code LIKE ? OR e.name LIKE ? OR e.pn LIKE ? OR t.nickname LIKE ?)');
+    params.push(...Array(4).fill(`%${q.q}%`));
+  }
+  const rows = db
+    .prepare(
+      `SELECT t.code, t.scheduled_start AS scheduledStart, t.status, t.mode, e.name AS employeeName, e.pn AS employeePn, un.name AS unitName,
+              p.name AS psychologistName, t.screening, t.screening_score AS screeningScore, t.screening_level AS screeningLevel,
+              r.note_for_client AS noteForClient
+       FROM tickets t JOIN users e ON e.id = t.employee_id JOIN users p ON p.id = t.psychologist_id
+       LEFT JOIN units un ON un.id = t.unit_id LEFT JOIN reports r ON r.ticket_id = t.id
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY t.scheduled_start DESC LIMIT 10000`,
+    )
+    .all(...params) as { screening: string }[];
+  res.json({ rows: rows.map((r) => ({ ...r, screening: JSON.parse(r.screening) as number[] })) });
+});

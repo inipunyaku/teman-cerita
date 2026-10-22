@@ -30,7 +30,7 @@ export function EmployeeLayout() {
           (idle || keyboard) && '-translate-y-full',
         )}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6">
           <NavLink to="/" aria-label="Beranda">
             <Logo />
           </NavLink>
@@ -58,7 +58,7 @@ export function EmployeeLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+      <main className="mx-auto max-w-[1600px] px-4 pt-6 sm:px-6">
         <Suspense fallback={<PageLoading />}>
           <Outlet />
         </Suspense>

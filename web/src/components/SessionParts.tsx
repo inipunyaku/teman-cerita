@@ -161,8 +161,8 @@ export function FeedbackSummary({ feedback }: { feedback: Feedback }) {
   );
 }
 
-export function HistoryList({ items, linkBase }: { items: HistoryItem[]; linkBase?: string }) {
-  if (!items.length) return <p className="text-sm text-ink-faint">Ini sesi pertama klien di Teman Cerita.</p>;
+export function HistoryList({ items, linkBase, limited, emptyText }: { items: HistoryItem[]; linkBase?: string; limited?: boolean; emptyText?: string }) {
+  if (!items.length) return <p className="text-sm text-ink-faint">{emptyText ?? 'Ini sesi pertama klien di Teman Cerita.'}</p>;
   return (
     <ul className="divide-y divide-line">
       {items.map((h) => {
@@ -183,7 +183,7 @@ export function HistoryList({ items, linkBase }: { items: HistoryItem[]; linkBas
             {linkBase ? (
               <Link to={`${linkBase}/${h.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-sky-700">{body}</Link>
             ) : h.screeningLevel || h.report ? (
-              <HistoryDetail h={h}>{body}</HistoryDetail>
+              <HistoryDetail h={h} limited={limited}>{body}</HistoryDetail>
             ) : (
               <div className="flex items-center justify-between gap-3 py-2.5">{body}</div>
             )}
@@ -194,8 +194,11 @@ export function HistoryList({ items, linkBase }: { items: HistoryItem[]; linkBas
   );
 }
 
-/** Untuk psikolog: buka sesi sebelumnya (oleh psikolog mana pun) untuk melihat skrining & catatan hasilnya. */
-function HistoryDetail({ h, children }: { h: HistoryItem; children: ReactNode }) {
+/**
+ * Untuk psikolog: buka sesi sebelumnya (oleh psikolog mana pun) untuk melihat skrining & catatan hasilnya.
+ * `limited`: peserta yang belum pernah sesi dengan psikolog ini — hanya skrining & catatan untuk klien.
+ */
+function HistoryDetail({ h, limited, children }: { h: HistoryItem; limited?: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const r = h.report;
   const notes = r
@@ -215,10 +218,12 @@ function HistoryDetail({ h, children }: { h: HistoryItem; children: ReactNode })
       </button>
       {open && (
         <div className="mb-3 space-y-3 rounded-2xl bg-canvas px-4 py-3 text-[13.5px]">
-          <p className="text-[12.5px] text-ink-faint">
-            {CLIENT_TOPICS[h.topic as ClientTopic] ?? h.topic}
-            {r?.category && ` · ${CASE_CATEGORIES[r.category as CaseCategory]?.label ?? r.category}`}
-          </p>
+          {h.topic && (
+            <p className="text-[12.5px] text-ink-faint">
+              {CLIENT_TOPICS[h.topic as ClientTopic] ?? h.topic}
+              {r?.category && ` · ${CASE_CATEGORIES[r.category as CaseCategory]?.label ?? r.category}`}
+            </p>
+          )}
           {h.screening && h.screening.length === SCREENING_ITEMS.length && (
             <div>
               <p className="eyebrow">Skrining EANSCALE · skor {h.screeningScore}</p>
@@ -246,7 +251,12 @@ function HistoryDetail({ h, children }: { h: HistoryItem; children: ReactNode })
               ))}
             </dl>
           ) : (
-            <p className="text-ink-faint">{r ? 'Tidak ada catatan klinis (mis. klien tidak hadir).' : 'Hasil sesi belum diisi psikolog.'}</p>
+            <p className="text-ink-faint">
+              {limited ? 'Belum ada catatan untuk klien.' : r ? 'Tidak ada catatan klinis (mis. klien tidak hadir).' : 'Hasil sesi belum diisi psikolog.'}
+            </p>
+          )}
+          {h.own && (
+            <Link to={`/psikolog/sesi/${h.id}`} className="link inline-block text-[13px]">Buka sesi ini</Link>
           )}
         </div>
       )}

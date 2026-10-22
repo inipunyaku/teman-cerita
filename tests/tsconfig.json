@@ -1,0 +1,9 @@
+{
+  // Untuk editor & `tsc -p tests`: alias @/ dan @shared/ sama dengan aplikasi (vitest membacanya dari vite.config.ts).
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "noUnusedLocals": false
+  },
+  "include": ["./**/*", "../web/src", "../shared", "../server"]
+}

@@ -59,7 +59,7 @@ describe('shared/constants', () => {
     expect(scoreScreening(best)).toEqual({ score: 16, level: 'rendah' });
     expect(scoreScreening(worst)).toEqual({ score: 64, level: 'tinggi' });
     const all2 = scoreScreening(SCREENING_ITEMS.map(() => 2));
-    const favorable = SCREENING_ITEMS.filter((i) => i.favorable).length;
+    const favorable = SCREENING_ITEMS.filter((i: { favorable: boolean }) => i.favorable).length;
     expect(all2.score).toBe(favorable * 3 + (16 - favorable) * 2);
   });
 

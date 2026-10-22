@@ -59,14 +59,15 @@ function useScrollLock(active: boolean) {
   }, [active]);
 }
 
-/** Tombol chat melayang di setiap halaman untuk menghubungi admin. Tamu mengisi nama & PN dulu. */
+/** Tombol chat melayang untuk menghubungi admin; hanya untuk pengguna yang sudah masuk. */
 export function SupportWidget() {
   const { user, loading } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const isGuest = !user;
-  const hidden = loading || user?.role === 'admin';
+  // Tidak tampil di halaman masuk (tamu) maupun untuk admin.
+  const hidden = loading || !user || user.role === 'admin';
   const headers = isGuest && token ? { 'x-support-token': token } : undefined;
   const enabled = !hidden && (!isGuest || !!token);
   const mobile = useMediaQuery('(max-width: 639px)');
@@ -90,12 +91,6 @@ export function SupportWidget() {
     // Pengguna yang login menerima pesan lewat SSE; tamu cukup memeriksa berkala.
     refetchInterval: isGuest ? (open ? 5000 : 30_000) : false,
     retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 2,
-  });
-  const { data: info } = useQuery({
-    queryKey: ['support', 'info'],
-    queryFn: () => api.get<{ responseMinutes: number; autoReply: boolean }>('/support/info'),
-    enabled: !hidden && open,
-    staleTime: 5 * 60_000,
   });
   useEffect(() => {
     if (error instanceof ApiError && error.code === 'NO_THREAD') forget();
@@ -145,11 +140,7 @@ export function SupportWidget() {
   if (hidden) return null;
   const needIdentity = isGuest && !token;
   const identity = isGuest && token ? readIdentity() : null;
-  const subtitle = identity
-    ? `${identity.name} · PN ${identity.pn}`
-    : info
-      ? `Biasanya membalas dalam ±${info.responseMinutes} menit`
-      : 'Tanya seputar layanan, akun, atau jadwal';
+  const subtitle = identity ? `${identity.name} · PN ${identity.pn}` : 'Tanya seputar layanan, akun, atau jadwal';
 
   return (
     <div className={clsx('fixed right-4 z-40 sm:right-6', user?.role === 'employee' ? 'bottom-[88px] sm:bottom-6' : 'bottom-5 sm:bottom-6')}>

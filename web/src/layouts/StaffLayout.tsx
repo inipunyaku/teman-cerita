@@ -75,7 +75,7 @@ export function StaffLayout({ nav, profilePath, label }: { nav: NavItem[]; profi
       <header
         ref={headerRef}
         className={clsx(
-          'sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-line/70 bg-canvas/85 px-4 backdrop-blur-md transition-transform duration-300 ease-out sm:px-6 lg:px-10',
+          'sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-line/70 bg-canvas/85 px-4 backdrop-blur-md transition-transform duration-300 ease-out sm:px-6',
           (idle || keyboard) && '-translate-y-full',
         )}
       >
@@ -88,7 +88,7 @@ export function StaffLayout({ nav, profilePath, label }: { nav: NavItem[]; profi
         <div className="hidden lg:block" />
         <NotificationBell />
       </header>
-      <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+      <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
         <Suspense fallback={<PageLoading />}>
           <Outlet />
         </Suspense>
