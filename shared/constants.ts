@@ -319,7 +319,8 @@ export const ATTACHMENT_TYPES: Record<string, { mime: string; kind: AttachmentKi
   txt: { mime: 'text/plain', kind: 'document' },
 };
 export const ATTACHMENT_KIND_LABEL: Record<AttachmentKind, string> = { image: 'Foto', video: 'Video', document: 'Dokumen' };
-export const attachmentExt = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
+/** Ekstensi file tanpa titik (huruf kecil). Nama tanpa titik → '' (bukan seluruh nama file). */
+export const attachmentExt = (name: string) => (name.includes('.') ? name.split('.').pop()!.toLowerCase() : '');
 
 // ---------------------------------------------------------------------------
 // Chat bantuan ke admin: balasan otomatis (bisa diubah admin di menu Chat bantuan)

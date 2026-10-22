@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { requireRole } from '../auth.js';
-import { dayCapacity, wibIso, wibParts } from '../scheduling.js';
+import { dayCapacity, wibIso, wibParts, wibToday } from '../scheduling.js';
 
 export const statsRouter = Router();
 
@@ -72,7 +72,8 @@ function ageBucket(birth: string | null) {
 const HELD = new Set(['completed', 'awaiting_report']);
 
 statsRouter.get('/', requireRole('admin'), (req, res) => {
-  const year = Number(req.query.year) || new Date().getFullYear();
+  // Tahun bawaan menurut WIB (server bisa berjalan di zona waktu lain, mis. UTC di Docker).
+  const year = Number(req.query.year) || Number(wibToday().slice(0, 4));
   const month = Math.min(12, Math.max(0, Number(req.query.month) || 0));
   const monthKey = month ? `${year}-${String(month).padStart(2, '0')}` : null;
   const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
@@ -119,7 +120,8 @@ statsRouter.get('/', requireRole('admin'), (req, res) => {
     rescheduleRate: pct(P.filter((r) => r.reschedule_count > 0).length, P.length),
     utilization: pct(live.length, periodCap),
     capacity: periodCap,
-    satisfaction: { rate: pct(avg(fb) ?? 0, FEEDBACK_MAX), avgScore: avg(fb) && Math.round(avg(fb)! * 10) / 10, responses: fb.length },
+    // Tanpa respons → null (tampil "–"), bukan 0%.
+    satisfaction: { rate: fb.length ? pct(avg(fb)!, FEEDBACK_MAX) : null, avgScore: avg(fb) && Math.round(avg(fb)! * 10) / 10, responses: fb.length },
     gender: countBy(clients, (r) => r.gender),
     age: countBy(clients, (r) => ageBucket(r.birth_date)),
     modes: countBy(live, (r) => r.mode),

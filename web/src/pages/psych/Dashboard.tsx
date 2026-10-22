@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ArrowRight, CalendarPlus, ClipboardPen, MessageCircle } from 'lucide-react';
+import { ArrowRight, CalendarPlus, ChevronLeft, ChevronRight, ClipboardPen, MessageCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { firstName, fmtDate, fmtSchedule, fmtTime, greeting, todayWib, wib, ymd } from '@/lib/format';
+import { firstName, fmtDate, fmtSchedule, fmtTime, fmtYmd, greeting, todayWib, wib, ymd } from '@/lib/format';
 import type { Ticket } from '@/lib/types';
 import { Avatar, EmptyState, ModeTag, ScreeningChip, Stat, StatusChip } from '@/components/ui';
 import { PsychDashboardSkeleton } from '@/components/Skeletons';
@@ -12,18 +12,49 @@ import { CLIENT_TOPICS, type ClientTopic } from '@shared/constants';
 
 const dayOf = (iso: string) => ymd(wib(iso));
 const addDays = (date: string, n: number) => new Date(Date.parse(`${date}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+/** Awal hari (00.00 WIB) dalam ISO UTC, untuk filter from/to. */
+const wibStart = (date: string) => new Date(`${date}T00:00:00+07:00`).toISOString();
+const isYmd = (v: string | null): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
+
+function agendaTitle(day: string, today: string) {
+  if (day === today) return 'Agenda hari ini';
+  if (day === addDays(today, 1)) return 'Agenda besok';
+  if (day === addDays(today, -1)) return 'Agenda kemarin';
+  return `Agenda ${fmtYmd(day, 'EEEE, d MMM yyyy')}`;
+}
 
 export default function PsychDashboard() {
   const { user } = useAuth();
+  const today = todayWib();
+  const [params, setParams] = useSearchParams();
+  const qDay = params.get('tanggal');
+  const day = isYmd(qDay) ? qDay : today;
+  const setDay = (d: string) => {
+    if (!isYmd(d)) return;
+    const next = new URLSearchParams(params);
+    if (d === today) next.delete('tanggal');
+    else next.set('tanggal', d);
+    setParams(next, { replace: true });
+  };
+  // Strip 7 hari mulai hari ini; bila tanggal yang dipilih di luar itu, strip bergeser mulai tanggal tersebut.
+  const stripStart = day >= today && day < addDays(today, 7) ? today : day;
   const { data, isLoading } = useQuery({ queryKey: ['tickets', 'psych'], queryFn: () => api.get<{ tickets: Ticket[] }>('/tickets') });
+  const range = useQuery({
+    queryKey: ['tickets', 'psych', 'range', stripStart],
+    queryFn: () =>
+      api.get<{ tickets: Ticket[] }>(`/tickets?${new URLSearchParams({ from: wibStart(stripStart), to: wibStart(addDays(stripStart, 7)), limit: '1000' })}`),
+    placeholderData: (prev) => prev,
+  });
   if (isLoading) return <PsychDashboardSkeleton />;
   const all = data?.tickets ?? [];
-  const today = todayWib();
   const live = all.filter((t) => t.status !== 'cancelled');
   const todays = live.filter((t) => dayOf(t.scheduledStart) === today).sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
   const awaiting = all.filter((t) => t.status === 'awaiting_report');
   const upcoming = all.filter((t) => t.status === 'scheduled' && dayOf(t.scheduledStart) > today).sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
-  const week = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+  const week = Array.from({ length: 7 }, (_, i) => addDays(stripStart, i));
+  const rangeLive = (range.data?.tickets ?? []).filter((t) => t.status !== 'cancelled');
+  const agenda = rangeLive.filter((t) => dayOf(t.scheduledStart) === day).sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
+  const agendaLoading = range.isLoading || (range.isPlaceholderData && range.isFetching);
   const monthKey = today.slice(0, 7);
   const doneMonth = all.filter((t) => t.status === 'completed' && dayOf(t.scheduledStart).startsWith(monthKey)).length;
   const unread = all.reduce((a, t) => a + t.unread, 0);
@@ -51,16 +82,23 @@ export default function PsychDashboard() {
 
       <div className="card mt-6 grid grid-cols-7 overflow-hidden">
         {week.map((d, i) => {
-          const n = live.filter((t) => dayOf(t.scheduledStart) === d).length;
+          const n = rangeLive.filter((t) => dayOf(t.scheduledStart) === d).length;
           return (
-            <div key={d} className={clsx('border-line px-1 py-3 text-center sm:py-4', i > 0 && 'border-l', i === 0 && 'bg-sky-50')}>
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDay(d)}
+              aria-pressed={d === day}
+              aria-label={`${fmtYmd(d)}, ${n} sesi`}
+              className={clsx('border-line px-1 py-3 text-center transition-colors sm:py-4', i > 0 && 'border-l', d === day ? 'bg-sky-50' : 'hover:bg-canvas')}
+            >
               <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{fmtDate(`${d}T05:00:00Z`, 'EEE')}</div>
-              <div className={clsx('display mt-0.5 text-[26px]', i === 0 ? 'text-sky-700' : 'text-ink')}>{Number(d.slice(8))}</div>
+              <div className={clsx('display mt-0.5 text-[26px]', d === day ? 'text-sky-700' : d === today ? 'text-sky-600' : 'text-ink')}>{Number(d.slice(8))}</div>
               <div className="mt-1 flex justify-center gap-0.5">
                 {Array.from({ length: Math.min(n, 4) }).map((_, j) => <span key={j} className="h-1.5 w-1.5 rounded-full bg-sky-500" />)}
                 {n === 0 && <span className="h-1.5 w-1.5 rounded-full bg-line" />}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -85,12 +123,42 @@ export default function PsychDashboard() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <section>
-          <h2 className="mb-3 font-semibold">Agenda hari ini</h2>
-          {todays.length === 0 ? (
-            <div className="card"><EmptyState title="Tidak ada sesi hari ini" description="Waktunya mengisi ulang energi." /></div>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-semibold">{agendaTitle(day, today)}</h2>
+            <div className="flex items-center gap-1">
+              <button type="button" className="btn btn-ghost btn-sm w-9 px-0" onClick={() => setDay(addDays(day, -1))} aria-label="Hari sebelumnya">
+                <ChevronLeft size={17} />
+              </button>
+              <input
+                type="date"
+                className="input h-9 w-auto py-0"
+                value={day}
+                onChange={(e) => e.target.value && setDay(e.target.value)}
+                aria-label="Pilih tanggal agenda"
+              />
+              <button type="button" className="btn btn-ghost btn-sm w-9 px-0" onClick={() => setDay(addDays(day, 1))} aria-label="Hari berikutnya">
+                <ChevronRight size={17} />
+              </button>
+              {day !== today && (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setDay(today)}>Hari ini</button>
+              )}
+            </div>
+          </div>
+          {agendaLoading ? (
+            <div className="space-y-3">
+              {[0, 1].map((i) => <div key={i} className="card h-[92px] animate-pulse bg-canvas" />)}
+            </div>
+          ) : agenda.length === 0 ? (
+            <div className="card">
+              {day === today ? (
+                <EmptyState title="Tidak ada sesi hari ini" description="Waktunya mengisi ulang energi." />
+              ) : (
+                <EmptyState title="Tidak ada sesi" description={`Belum ada jadwal pada ${fmtYmd(day, 'EEEE, d MMMM yyyy')}.`} />
+              )}
+            </div>
           ) : (
             <div className="space-y-3">
-              {todays.map((t) => (
+              {agenda.map((t) => (
                 <Link key={t.id} to={`/psikolog/sesi/${t.id}`} className="card flex gap-4 p-4 transition-shadow hover:shadow-soft sm:p-5">
                   <div className="w-14 shrink-0 text-center">
                     <div className="display text-[26px] text-ink">{fmtTime(t.scheduledStart)}</div>

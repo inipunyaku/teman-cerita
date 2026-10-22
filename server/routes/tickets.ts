@@ -8,7 +8,7 @@ import { requireRole, requireVerified, type UserRow } from '../auth.js';
 import { publish } from '../events.js';
 import { adminIds, formatWhen, notify } from '../notify.js';
 import { config } from '../config.js';
-import { assertSlotEligible, eligibility, reserveSlot } from '../scheduling.js';
+import { assertSlotEligible, eligibility, reserveSlot, wibToday } from '../scheduling.js';
 import { fail, HttpError, intParam, parse, pageParams } from '../util.js';
 import {
   ATTACHMENT_KIND_LABEL,
@@ -198,7 +198,8 @@ export function broadcastTicket(t: { id: number; employee_id: number; psychologi
 }
 
 function nextCode() {
-  const year = new Date().getFullYear();
+  // Tahun menurut WIB, bukan zona waktu server.
+  const year = wibToday().slice(0, 4);
   const row = db.prepare(`SELECT code FROM tickets WHERE code LIKE ? ORDER BY code DESC LIMIT 1`).get(`TC-${year}-%`) as
     | { code: string }
     | undefined;
@@ -264,7 +265,8 @@ ticketsRouter.get('/', requireVerified, (req, res) => {
   const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
   // Dengan ?page= hasil dipotong per halaman dan total ikut dikirim; tanpa page tetap daftar biasa (maks. limit).
   const pg = pageParams(q);
-  const limitSql = pg ? `LIMIT ${pg.size} OFFSET ${pg.offset}` : `LIMIT ${Math.min(Number(q.limit) || 300, 1000)}`;
+  // Batas 1–1000: limit negatif di SQLite berarti tanpa batas, jadi ikut dijepit.
+  const limitSql = pg ? `LIMIT ${pg.size} OFFSET ${pg.offset}` : `LIMIT ${Math.min(Math.max(1, Math.floor(Number(q.limit)) || 300), 1000)}`;
   const unread =
     viewer.role === 'admin' ? '0' : '(SELECT COUNT(*) FROM messages m WHERE m.ticket_id = t.id AND m.sender_id != ? AND m.read_at IS NULL)';
   const sql = `${SELECT.replace('FROM tickets t', `, ${unread} AS unread FROM tickets t`)}

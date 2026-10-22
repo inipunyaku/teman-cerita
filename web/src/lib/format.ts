@@ -1,4 +1,4 @@
-import { format, formatDistanceToNowStrict, isToday, isTomorrow, isYesterday } from 'date-fns';
+import { differenceInCalendarDays, format, formatDistanceToNowStrict } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 /**
@@ -15,9 +15,11 @@ export const fmtTime = (iso: string | Date) => format(wib(iso), 'HH.mm', { local
 
 export function fmtDay(iso: string | Date) {
   const d = wib(iso);
-  if (isToday(d)) return 'Hari ini';
-  if (isTomorrow(d)) return 'Besok';
-  if (isYesterday(d)) return 'Kemarin';
+  // Dibandingkan dengan tanggal hari ini menurut WIB, bukan tanggal perangkat (bisa berbeda di zona waktu lain).
+  const diff = differenceInCalendarDays(d, wib(new Date()));
+  if (diff === 0) return 'Hari ini';
+  if (diff === 1) return 'Besok';
+  if (diff === -1) return 'Kemarin';
   return format(d, 'EEEE, d MMM', { locale: id });
 }
 
