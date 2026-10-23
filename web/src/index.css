@@ -8,6 +8,12 @@
 @tailwind utilities;
 
 @layer base {
+  /* Teks isian pengguna tanpa spasi (mis. keluhan) dipotong di tepi kartu, tidak meluber keluar. */
+  dd,
+  .whitespace-pre-line,
+  .whitespace-pre-wrap {
+    overflow-wrap: anywhere;
+  }
   :root {
     color-scheme: light;
     -webkit-tap-highlight-color: transparent;

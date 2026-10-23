@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { ChevronDown, Headset, LogOut, MessageCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -66,6 +67,8 @@ export function SupportWidget() {
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const isGuest = !user;
+  // Di HP, halaman pendaftaran punya bilah tombol Kembali/Lanjutkan yang menempel di bawah: tombol chat naik di atasnya.
+  const onBooking = useLocation().pathname.endsWith('/buat-janji');
   // Tidak tampil di halaman masuk (tamu) maupun untuk admin.
   const hidden = loading || !user || user.role === 'admin';
   const headers = isGuest && token ? { 'x-support-token': token } : undefined;
@@ -143,7 +146,7 @@ export function SupportWidget() {
   const subtitle = identity ? `${identity.name} · PN ${identity.pn}` : 'Tanya seputar layanan, akun, atau jadwal';
 
   return (
-    <div className={clsx('fixed right-4 z-40 sm:right-6', user?.role === 'employee' ? 'bottom-[88px] sm:bottom-6' : 'bottom-5 sm:bottom-6')}>
+    <div className={clsx('fixed right-4 z-40 sm:right-6', user?.role === 'employee' ? (onBooking ? 'bottom-[148px] sm:bottom-6' : 'bottom-[88px] sm:bottom-6') : 'bottom-5 sm:bottom-6')}>
       {open && (
         <div
           role="dialog"
